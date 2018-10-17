@@ -1,0 +1,314 @@
+<template>
+
+  <view class="list">
+
+    <block wx:for="{{ list }}" wx:key="id">
+
+      <view class="section-caption">
+        <view class="section-title">评估编号:{{item.caseNo}}</view>
+      </view>
+
+      <view class="zan-panel no-mg">
+
+        <view class="zan-cell">
+          <view class="zan-field__title">登记时间:</view>
+          <view class="zan-cell__bd">{{item.date}}</view>
+        </view>
+
+        <view class="zan-cell">
+          <view class="zan-field__title">纠纷类型:</view>
+          <view class="zan-cell__bd">{{item.type}}</view>
+        </view>
+
+        <view class="zan-panel__title">纠纷描述:</view>
+        <view class="zan-cell">
+          <view class="zan-cell__bd break zan-ellipsis--l5">{{item.remarks}}</view>
+        </view>
+
+        <view class="zan-cell">
+          <view class="zan-field__title">状态:</view>
+          <view class="zan-cell__bd text-orange">{{item.statuswz}}</view>
+        </view>
+
+        <view class="zan-btns btn-group">
+          <button wx:if="{{item.status === '0'}}" class="zan-btn zan-btn--primary zan-btn--small zan-btn--plain" @tap="ApplicationAssessment('{{item.id}}')">申请评估</button>
+          <button wx:elif="{{item.status === '1'}}" disabled="{{ true }}" class="zan-btn zan-btn--primary zan-btn--small zan-btn--plain">已申请评估</button>
+          <button wx:else="{{item.status === '2'}}" disabled="{{ downloading }}" class="zan-btn zan-btn--primary zan-btn--small zan-btn--plain" @tap="Assessment('{{item.id}}')">查看并下载评估报告</button>
+        </view>
+
+      </view>
+
+    </block>
+
+    <zan-loadmore
+      wx:if="{{ !nodata }}"
+      :loading.sync="loading"
+      :nodata.sync="nodata"
+      :nomore.sync="nomore"
+      nomoreText="已经到底了"
+    ></zan-loadmore>
+
+    <view wx:if="{{ nodata && !loading }}" class="nodata-view">
+      <view class="nodata-view__icon"><view class="icon icon-tijianbaogaochaxun"></view></view>
+      <view class="nodata-view__label">当前无评估</view>
+    </view>
+
+    <view class="fixed-bar fixed-bar--footer">
+      <navigator class="zan-btn zan-btn--primary" url="/pages/assessment/assessment-add?type=0" open-type="redirect">申请评估</navigator>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import ZanLoadmore from '@/components/zan-loadmore'
+  import {dateformat} from '@/utils/utils'
+  import {H5URL} from '@/utils/constants'
+  import {getList, applicationAssessment, getDesc} from '@/api/user'
+
+  export default class MyAssessment extends wepy.page {
+    config = {
+      navigationBarTitleText: '我的评估'
+    }
+    components = {
+      'zan-loadmore': ZanLoadmore
+    }
+    data={
+      // 页码
+      pageNum: 0,
+      // 每页数量
+      pageSize: 10,
+
+      // 总数量
+      itemCount: 0,
+      // 是否正在加载
+      loading: false,
+      // 是否已加载完
+      nomore: false,
+      // 是否无数据
+      nodata: false,
+      list: [],
+      downloading: false,
+    }
+
+    onReachBottom() {
+      this.onPullup()
+    }
+    methods = {
+      ApplicationAssessment(id) {
+        applicationAssessment({
+          evaluateId: id
+        }).then((data = {}) => {
+          console.log(data)
+          const url = `${H5URL}/nasweb/#/web?key=${data.id.key}&token=${data.id.token}&disputeId=${data.id.disputeId}&mediatorId=${data.id.mediatorId}&createType=${data.id.createType}`
+          wx.navigateTo({
+            url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
+          })
+        })
+      },
+      Assessment(id) {
+        let _that = this
+        _that.downloading = true
+        _that.$apply()
+        getDesc({
+          evaluateId: id
+        }).then(data => {
+
+          _that.downloadFile(data.evaluate.reportURL).then(function (res) {
+            console.log(res)
+            _that.openFile(res)
+          }).catch(function (e) {
+            wx.showToast({title: '下载文件失败', icon: 'none', duration: 3e3})
+          })
+        })
+      }
+
+    }
+    // 下载文件
+    downloadFile(url) {
+      return new Promise((resolve, reject) => {
+
+        wx.downloadFile({
+          url: `${H5URL}` + url,
+          success({errMsg, statusCode, tempFilePath}) {
+
+            resolve(tempFilePath)
+
+          },
+          fail: reject,
+          complete: () => {
+            // 更新进度
+            this.downloading = false
+            this.$apply()
+          }
+        })
+      })
+    }
+
+    // 上拉加载
+    onPullup(type, cb) {
+      // 若没有数据，或已加载完，或正在加载，则不做处理
+      if (this.nodata || this.nomore || this.loading) return
+
+      const {pageNum, pageSize} = this
+
+      // 开启加载状态
+      this.loading = true
+
+      getList({
+        pageSize,
+        // 加载下一页的数据
+        pageNum: pageNum + 1
+      })
+        .then((data = {}) => {
+          // 关闭加载状态
+          this.loading = false
+          console.log(data.list)
+          // 将返回的数据追加到list中
+          this.list = this.list.concat(this.transform(data.list || []))
+          this.itemCount = data.size || 0
+          // 计算是否有数据
+          this.nodata = this.itemCount === 0
+          // 计算是否已加载完
+          this.nomore = !this.nodata && this.list.length === this.itemCount
+
+          // 若未加载完，则页码加1
+          if (!this.nodata && !this.nomore) {
+            this.pageNum++
+          }
+
+          this.$apply()
+
+         // cb && cb()
+        })
+        .catch(e => {
+          // 关闭加载状态
+          this.loading = false
+          this.$apply()
+
+         // cb && cb()
+        })
+    }
+    onShow() {
+      // 初始化后执行一次上拉加载
+      this.loading = false
+      this.nodata = false
+      this.nomore = false
+      this.list = []
+      this.pageNum = 0
+      this.itemCount = 0
+      this.onPullup()
+    }
+    onPullDownRefresh() {
+      this.loading = false
+      this.nodata = false
+      this.nomore = false
+      this.list = []
+      this.pageNum = 0
+      this.itemCount = 0
+
+      this.onPullup(() => {
+        wx.stopPullDownRefresh()
+      })
+    }
+
+    transform(list = []) {
+      return list.map(item => {
+        let date = ''
+
+        if (item.createDate) {
+          date = dateformat(new Date(item.createDate))
+        }
+
+        item.date = date
+
+        switch (item.status) {
+        case '0':
+          item.statuswz = '未评估'
+          break
+        case '1':
+          item.statuswz = '进行中'
+          break
+        case '2':
+          item.statuswz = '已完成'
+          break
+        }
+        return item
+      })
+    }
+
+    // 打开文件
+    openFile(filePath) {
+      wx.openDocument({
+        filePath: filePath,
+        success: () => {
+          console.log('打开文档成功')
+        },
+        fail: ({errMsg = '打开文件失败，请稍后再试！'} = {}) => {
+          console.log(errMsg)
+          wx.showToast({title: errMsg, icon: 'none', duration: 3e3})
+        }
+      })
+    }
+
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+
+  page {
+    padding-bottom: 45px;
+  }
+  .picker-cell{
+    border-bottom: 1px solid $gray-light;
+    background-color: $gray-f8;
+  }
+  .section-caption {
+    background-color: $gray-light;
+  }
+
+  .zan-panel + .section-caption {
+    margin-top: 10px;
+  }
+
+  .section-title {
+    font-weight: normal;
+  }
+
+  .break{
+    word-wrap:break-word;
+    width:100%;
+  }
+
+  .zan-field__title,
+  .zan-panel > .zan-panel__title {
+    color: $gray-dark;
+  }
+
+  .nodata-view {
+    width: 100vw;
+    height: calc(100vh - 100px);
+  }
+
+  .btn-group {
+    text-align: right;
+
+    .zan-btn {
+      min-width: 70px;
+      background-color: lighten($primary-color, 62%);
+      border-radius: 20px;
+      &::after {
+        border-radius: 40px;
+      }
+    }
+  }
+
+  .fixed-bar .zan-btn {
+    border-radius: 0;
+
+    &::after {
+      border-radius: 0;
+    }
+  }
+</style>

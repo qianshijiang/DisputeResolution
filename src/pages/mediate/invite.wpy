@@ -1,0 +1,214 @@
+<template>
+  <view class="container">
+    <view class="zan-panel" style="margin-top: 0">
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">手机号</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入被邀请人手机号" maxlength="11" type="number" @input="userInput('phone')" />
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">被邀请人身份</view>
+        <view class="checkList">
+          <view class="check" @tap="checkUser">
+            <image src="/images/mediate/check.png" class="checkIcon" wx:if="{{!checked}}"></image>
+            <image src="/images/mediate/nocheck.png" class="checkIcon" wx:if="{{checked}}"></image>
+            普通用户
+          </view>
+          <view class="check" @tap="checkAssist">
+            <image src="/images/mediate/nocheck.png" class="checkIcon" wx:if="{{!checked}}"></image>
+            <image src="/images/mediate/check.png" class="checkIcon" wx:if="{{checked}}"></image>
+            协助调解员
+          </view>
+        </view>
+      </view>
+    </view>
+    <button class="btn" disabled="{{ loading }}" @tap='confirm'>确定邀请</button>
+  </view>
+</template>
+<script>
+import wepy from 'wepy'
+import {judgeHaveAssisting, updateeAssisting, sendViewCode} from '@/api/mediate'
+export default class Live extends wepy.page {
+  config = {
+    navigationBarTitleText: '邀请参与'
+  }
+  data = {
+    meetingId: '',
+    phone: '',
+    checked: false,
+    loading: false
+  }
+  methods = {
+    userInput(field, {detail}) {
+      this[field] = detail.value.trim()
+    },
+    checkUser() {
+      this.checked = false
+    },
+    checkAssist() {
+      this.checked = true
+    },
+    confirm() {
+      var _this = this
+      let phoneReg = /^1[3|4|5|6|7|8|9][0-9]{9}$/
+      if (phoneReg.test(this.phone)) {
+        _this.loading = true
+        if (_this.checked) {
+          judgeHaveAssisting({
+            id: _this.meetingId
+          })
+          .then((data) => {
+            if (data === 0) {
+              _this.updateeAssisting()
+            } else if (data === 1) {
+              wx.showModal({
+                title: '提示',
+                content: '此会议已有协助调解员，是否修改协助调解员',
+                success: function () {
+                  _this.updateeAssisting()
+                },
+                fall: function () {
+                  _this.loading = false
+                  _this.$apply()
+                }
+              })
+            }
+          })
+          .catch(e => {
+            _this.loading = false
+            _this.$apply()
+          })
+        } else {
+          sendViewCode({
+            id: this.meetingId,
+            phone: this.phone
+          })
+          .then((data) => {
+            wx.showToast({title: '邀请成功', icon: 'success'})
+            setTimeout(() => {
+              wx.navigateBack()
+            }, 2000)
+          })
+          .catch(e => {
+            _this.loading = false
+            _this.$apply()
+          })
+        }
+      } else {
+        wx.showToast({title: '请输入正确的手机号', icon: 'none'})
+      }
+    }
+  }
+  updateeAssisting() {
+    var _this = this
+    updateeAssisting({
+      id: this.meetingId,
+      assistingMediatorPhone: this.phone
+    }).then(() => {
+      wx.showToast({title: '邀请成功', icon: 'success'})
+      setTimeout(() => {
+        wx.navigateBack()
+      }, 2000)
+    }).catch(e => {
+      console.log(e)
+      _this.loading = false
+      _this.$apply()
+    })
+  }
+  onLoad(data) {
+    console.log(data)
+    this.meetingId = data.meetingid
+  }
+}
+</script>
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  page {
+    position: relative;
+    height: 100%;
+  }
+  .container{
+    background-color:$white;
+  }
+  .text{
+    font-size: 10px;
+    padding: 10px 15px;
+    text-align: center;
+  }
+  .zan-btn--mini{
+    font-size: 12px;
+  }
+  navigator {
+    display:inline-block;
+    color: $orange;
+  }
+
+  .topbor{
+    border-top: 10px solid $background-color;
+  }
+  .zan-field {
+    padding: 0 15px;
+    /* border-bottom: 1rpx solid $background-color; */
+  }
+  .zan-field__title {
+    color: #333;
+    min-width: 65px;
+    padding-right: 10px;
+    font-size: 28rpx;
+    font-weight: bold;
+  }
+  .text-right{
+    text-align: right;
+  }
+  .checkList{
+    padding-left: 20rpx;
+    display: flex;
+    flex-direction:row;
+    align-items: center;
+    justify-content:space-around;
+  }
+  .check{
+    width: 200rpx;
+    display: flex;
+    flex-direction:row;
+    align-items: center;
+    /*line-height: 1;*/
+    padding: 14px 0;
+    min-height: 22px;
+    height: auto;
+    font-size: 28rpx;
+    font-weight: bold;
+  }
+  .zan-field__input {
+    flex: 1;
+    line-height: 1.6;
+    padding: 14px 0;
+    min-height: 22px;
+    height: auto;
+    font-size: 28rpx;
+  }
+  .checkIcon{
+    width: 24rpx;
+    height: 24rpx;
+    margin-right: 16rpx;
+    margin-top: 2rpx;
+  }
+  .btnbox{
+    width: 80%;
+    margin: 10px auto;
+  }
+  .btn{
+    width: 560rpx;
+    height: 90rpx;
+    line-height: 90rpx;
+    background-color: #225689;
+    border-radius: 8rpx;
+    color: #ffffff;
+    text-align: center;
+    margin: 0 auto;
+    font-size: 32rpx;
+    margin-top: 60rpx;
+  }
+
+</style>

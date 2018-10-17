@@ -1,0 +1,30 @@
+<template>
+  <view class="container">
+    <web-view src="{{ url }}" @message="handleMessage"></web-view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+
+export default class Webview extends wepy.page {
+  data = {
+    url: ''
+  }
+
+  methods = {
+    handleMessage(e) {
+      console.log(e)
+    }
+  }
+
+  onLoad({url}) {
+    // let url='http://localhost:8080/session/toMobileSession?disputesId=1132&counselorId=6001'
+    if (url === 'https://yn.lvpin100.com') {
+      url = 'https://yn.lvpin100.com?app_type=2'
+    }
+    this.url = decodeURIComponent(url)
+    console.error(decodeURIComponent(url))
+  }
+}
+</script>

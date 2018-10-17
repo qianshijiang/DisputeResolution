@@ -1,0 +1,486 @@
+<template>
+  <zan-tab componentId="tab" :tab.sync="tab" @zanTabChange.user="zanTabChange"></zan-tab>
+
+  <tab-content :tab.sync="tab">
+    <view class="tab-pane {{ tab.selectedId === 'tab1' ? 'active' : '' }}">
+      <scroll-view scroll-y style="height:100%;">
+        <block wx:for="{{ appliers }}" wx:key="index">
+          <view class="zan-panel__title">申请人{{ appliers.length > 1 ? index + 1 : '' }}</view>
+          <view class="zan-panel">
+            <view class="zan-cell">
+              <view class="zan-cell__bd">
+                <view class="zan-cell zan-cell--inner">
+                  <view class="zan-cell__bd">
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">申请人</text>
+                      <text>{{ item.name }}</text>
+                    </view>
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">手机号</text>
+                      <text>{{ item.phone }}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="zan-cell zan-cell--inner" wx:if="{{ item.agent }}">
+                  <view class="zan-cell__bd">
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">代理人</text>
+                      <text>{{ item.agent.name }}</text>
+                    </view>
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">手机号</text>
+                      <text>{{ item.agent.phone }}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+              <view class="zan-cell__ft">
+                <button class="zan-btn zan-btn--primary zan-btn--text btn-edit icon icon-bianji-copy-copy" @tap="handleEdit({{ index }})"></button>
+              </view>
+            </view>
+          </view>
+        </block>
+        <view class="content-padded">
+          <view wx:if="{{ appliers.length < 5 }}" class="zan-center">
+            <text>\n</text>
+            <text>\n</text>
+            <view class="zan-btn zan-btn--primary zan-btn--small zan-btn--dashed" hover-class="button-hover" @tap="handleAdd">
+              <text class="icon icon-plus"></text>
+              <text>添加申请人</text>
+            </view>
+          </view>
+          <text>\n</text>
+          <text>\n</text>
+          <view class="zan-row">
+            <view class="zan-col zan-col-16 zan-col-offset-4">
+              <button class="zan-btn zan-btn--primary" @tap="handleSubmit">下一步</button>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+    <view class="tab-pane {{ tab.selectedId === 'tab2' ? 'active' : '' }}">
+      <scroll-view scroll-y style="height:100%;">
+        <block wx:for="{{ respondents }}" wx:key="index">
+          <view class="zan-panel__title">被申请人{{ respondents.length > 1 ? index + 1 : '' }}</view>
+          <view class="zan-panel">
+            <view class="zan-cell">
+              <view class="zan-cell__bd">
+                <view class="zan-cell zan-cell--inner">
+                  <view class="zan-cell__bd">
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">被申请人</text>
+                      <text>{{ item.name }}</text>
+                    </view>
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">手机号</text>
+                      <text>{{ item.phone }}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="zan-cell zan-cell--inner" wx:if="{{ item.agent }}">
+                  <view class="zan-cell__bd">
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">代理人</text>
+                      <text>{{ item.agent.name }}</text>
+                    </view>
+                    <view class="zan-cell__text">
+                      <text class="zan-field__title">手机号</text>
+                      <text>{{ item.agent.phone }}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+              <view class="zan-cell__ft">
+                <button class="zan-btn zan-btn--primary zan-btn--text btn-edit icon icon-bianji-copy-copy" @tap="handleEdit({{ index }})"></button>
+              </view>
+            </view>
+          </view>
+        </block>
+        <view class="content-padded">
+          <view wx:if="{{ respondents.length < 5 }}" class="zan-center">
+            <text>\n</text>
+            <text>\n</text>
+            <view class="zan-btn zan-btn--primary zan-btn--small zan-btn--dashed" hover-class="button-hover" @tap="handleAdd">
+              <text class="icon icon-plus"></text>
+              <text>添加被申请人</text>
+            </view>
+          </view>
+          <text>\n</text>
+          <text>\n</text>
+          <view class="zan-row">
+            <view class="zan-col zan-col-16 zan-col-offset-4">
+              <button class="zan-btn zan-btn--primary" @tap="handleSubmit">下一步</button>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </tab-content>
+</template>
+
+<script>
+import wepy from 'wepy'
+import ZanEvent from '@/utils/event'
+import StoreFactory from '@/utils/store'
+import {getUserInfo} from '@/utils/utils'
+import ZanTab from '@/components/zan-tab'
+import {getDefaultOrgData} from '@/api/common'
+import TabContent from '@/components/tab-content'
+
+const store = StoreFactory.getStore('mediateApply')
+
+// 将event对象添加到缓存
+store.set('mediateEvent', ZanEvent)
+
+let cachedItem = null, caseId = null
+
+// 监听添加申请人|被申请人事件
+ZanEvent.on('onApplyAdd', (item = {}) => {
+  cachedItem = item
+})
+// 监听案件提交成功
+ZanEvent.on('onSubmit', id => {
+  caseId = id
+})
+
+const isValid = v => {
+  if (typeof v === 'undefined' || v === null) {
+    return false
+  }
+  if (typeof v === 'string' && v.trim() === '') {
+    return false
+  }
+
+  return true
+}
+
+const isDuplicate = (a, b) => {
+  return isValid(a) && isValid(b) && a === b
+}
+
+const showToast = m => wx.showToast({title: m, icon: 'none', duration: 3e3})
+
+const tabOptisons = {
+  list: [
+    {id: 'tab1', title: '申请人'},
+    {id: 'tab2', title: '被申请人'}
+  ],
+  fixed: true,
+  selectedId: 'tab1'
+}
+
+export default class MediateApply extends wepy.page {
+  config = {
+    disableScroll: true,
+    navigationBarTitleText: '新建纠纷'
+  }
+
+  components = {
+    'zan-tab': ZanTab,
+    'tab-content': TabContent
+  }
+
+  data = {
+    tab: {...tabOptisons},
+    currentIndex: -1,
+    appliers: [],
+    respondents: [],
+    userInfo: null,
+    typeId: ''
+  }
+
+  computed = {
+    tabIndex() {
+      if (this.tab.selectedId === 'tab1') {
+        return 0
+      }
+
+      return 1
+    }
+  }
+
+  methods = {
+    zanTabChange(id) {
+      this.tab.selectedId = id
+
+      this.$apply()
+    },
+    // 添加
+    handleAdd() {
+      this.currentIndex = -1
+
+      wx.navigateTo({url: `apply-add?type=${this.tabIndex}`})
+    },
+    // 编辑或删除
+    handleEdit(index) {
+      const itemList = ['编辑']
+      // 申请方只有一个人时不能删除
+      if (this.tabIndex !== 0 || this.appliers.length > 1) {
+        itemList.push('删除')
+      }
+      wx.showActionSheet({
+        itemList,
+        success: ({tapIndex}) => {
+          if (tapIndex === 0) { // 编辑
+            const item = this[['appliers', 'respondents'][this.tabIndex]][index]
+
+            this.currentIndex = index
+
+            return wx.navigateTo({
+              url: `apply-add?type=${this.tabIndex}&data=${encodeURIComponent(JSON.stringify(item))}`
+            })
+          }
+
+          // 删除
+          wx.showModal({
+            title: `删除${['申请人', '被申请人'][this.tabIndex]}`,
+            content: `确定要删除当前${['申请人', '被申请人'][this.tabIndex]}吗？`,
+            success: ({confirm}) => {
+              if (confirm) {
+                this[['appliers', 'respondents'][this.tabIndex]]['splice'](index, 1)
+
+                this.$apply()
+              }
+            }
+          })
+        }
+      })
+    },
+    // 下一步
+    handleSubmit() {
+      if (this.appliers.length === 0) {
+        this.tab.selectedId = 'tab1'
+        this.$apply()
+        return showToast('请添加申请人信息')
+      }
+      if (this.respondents.length === 0) {
+        this.tab.selectedId = 'tab2'
+        this.$apply()
+        return showToast('请添加被申请人信息')
+      }
+
+      if (this.validate()) {
+        this.writeCache()
+
+        wx.navigateTo({url: `apply-step2?typeid=${this.typeId}`})
+      }
+    }
+  }
+
+  // 当前用户作为申请方需要检验的字段
+  getValidateKeys(code) {
+    switch (code) {
+    case 10: // 申请人-自然人
+      return ['name', 'genderValue', 'phone', 'idcard', 'areaCode', 'address']
+    case 12: // 申请人-法人
+      return ['orgName', 'creditCode', 'name', 'phone', 'idcard', 'areaCode', 'address']
+    case 13: // 申请人-非法人组织
+      return ['orgName', 'name', 'phone', 'idcard', 'areaCode', 'address']
+    case 40: // 申请人-代理人
+      return ['name', 'genderValue', 'phone', 'idcard']
+    // case 20: // 被申请人-自然人
+    //   return ['name', 'genderValue', 'phone']
+    // case 22: // 被申请人-法人
+    //   return ['orgName', 'creditCode', 'name', 'phone', 'areaCode', 'address']
+    // case 23: // 被申请人-非法人组织
+    //   return ['orgName', 'name', 'phone', 'areaCode', 'address']
+    // case 46: // 被申请人-代理人
+    //   return ['phone']
+    }
+
+    return []
+  }
+
+  // 校验获取当前用户的信息是否完整
+  validate() {
+    // 拿到申请方的当事人和代理人
+    const list = this.appliers.reduce((prev, curr) => prev.concat(curr, curr.agent), []).filter(_ => _)
+    // 找出当前登录用户
+    const item = list.find(({phone} = {}) => phone === this.userInfo.phone)
+
+    if (item) {
+      const keys = this.getValidateKeys(item.role)
+
+      if (!keys.every(key => isValid(item[key]))) {
+        this.tab.selectedId = 'tab1'
+        this.currentIndex = 0
+
+        this.$nextTick(() => {
+          wx.navigateTo({
+            url: `apply-add?type=${this.tabIndex}&data=${encodeURIComponent(JSON.stringify(item))}`
+          })
+        })
+
+        return false
+      }
+
+      return true
+    } else {
+      wx.showToast({title: '您不在申请人或申请人代理人列表，请确认', icon: 'none', duration: 3e3})
+    }
+
+    return false
+  }
+
+  // 添加一位当事人
+  appendItem(item = {}) {
+    // 通过手机号和身份证号判断是否重复
+    const keys = ['phone', 'idcard']
+    // 判断是否重复
+    const isExists = (list = [], target = {}) => {
+      return list.some((sub = {}) => keys.some(key => isDuplicate(target[key], sub[key])))
+    }
+
+    const props = ['appliers', 'respondents']
+    // 当前一方列表
+    const list = [...this[props[this.tabIndex]]]
+    // 另一方列表
+    const another = this[['respondents', 'appliers'][this.tabIndex]]
+    // 拿到另一方的所有代理人
+    const agents = another.reduce((prev, curr) => prev.concat(curr.agent), []).filter(_ => _)
+
+    // 编辑 => 将当前编辑的人排除，不计入重复检验
+    if (this.currentIndex > -1) {
+      list.splice(this.currentIndex, 1)
+    }
+
+    // 当事人不能重复且不能是另一方的代理人
+    if (isExists(list, item) || isExists(another, item) || isExists(agents, item)) {
+      return showToast(`${['', '被'][this.tabIndex]}申请人重复，请重新添加！`)
+    }
+
+    const {agent} = item
+    if (agent) {
+      // 当事人和代理人不能是同一个人
+      if (isExists([item], agent)) {
+        return showToast(`${['', '被'][this.tabIndex]}申请人不能为自己的代理人，请重新填写！`)
+      }
+
+      // 代理人不能是另一方的当事人和代理人
+      if (isExists(another, agent) || isExists(agents, agent)) {
+        return showToast('代理人重复，请重新添加！')
+      }
+    }
+
+    if (this.currentIndex > -1) {
+      this[props[this.tabIndex]]['splice'](this.currentIndex, 1, item)
+    } else {
+      this[props[this.tabIndex]]['push'](item)
+    }
+
+    this.$apply()
+  }
+
+  writeCache() {
+    const {appliers, respondents} = this
+
+    store.set('mediateApplyStep1', {appliers, respondents})
+  }
+
+  onShow() {
+    if (cachedItem) {
+      this.appendItem(cachedItem)
+
+      cachedItem = null
+    }
+
+    if (caseId !== null) {
+      // 案件已提交成功，跳转到成功页面
+      wx.redirectTo({url: `/pages/mediate/success?caseid=${caseId}`})
+      caseId = null
+    }
+  }
+
+  onLoad({typeid}) {
+    this.typeId = typeid
+
+    if (!this.userInfo) {
+      this.userInfo = getUserInfo()
+    }
+
+    this.$apply()
+
+    if (this.appliers.length === 0) {
+      const {actualName, phone, sex, idCard, areasCode, lname, nation} = this.userInfo
+
+      const genders = ['男', '女']
+      let genderValue = genders.indexOf(sex)
+      if (genderValue === -1) {
+        genderValue = ''
+      }
+
+      cachedItem = {
+        phone,
+        genderValue,
+        typeIndex: 0,
+        role: 10,
+        current: true,
+        idcard: idCard,
+        address: nation,
+        name: actualName,
+        addressName: lname,
+        areaCode: areasCode
+      }
+    }
+
+    // 预先加载调解机构数据
+    getDefaultOrgData()
+    .then((list = []) => {
+      store.set('defaultOrgList', list)
+    })
+  }
+
+  onUnload() {
+    // 清除缓存
+    store.remove('mediateApplyStep1')
+    store.remove('mediateApplyStep2')
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables';
+
+.zan-cell {
+  padding-right: 0;
+}
+
+.zan-cell--inner {
+  padding: 12px 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &::after {
+    width: auto;
+    left: 0;
+    right: 0;
+    transform: scaleY(.5);
+  }
+}
+
+.zan-cell__text {
+  line-height: 1;
+
+  & + .zan-cell__text {
+    margin-top: 10px;
+  }
+}
+
+.zan-field__title {
+  display: inline-block;
+  vertical-align: middle;
+  color: $gray-darker;
+}
+
+.btn-edit {
+  margin: 0 5px;
+  font-size: 28px;
+}
+</style>

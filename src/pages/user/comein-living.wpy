@@ -1,0 +1,223 @@
+<template>
+    <view class="container">
+      <view>
+        <camera device-position="back"  wx:if="{{!img}}" flash="off" binderror="error" style="width: 100%; height: 400px;"></camera>
+        <image wx:if="{{img}}" mode="widthFix" src="{{src}}" style="width: 100%; height: auto;"></image>
+        <view style="width: 100%;height: 20px;line-height: 15px;text-align: center;padding-top: 15px;">
+          <p style="color:#888;text-align: center;color: red">将身份证正面置于此区域，画面清晰时点击确认按钮。</p>
+        </view>
+        <view style="display: flex;flex-direction: row">
+          <view class="btnbox">
+            <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="camaras">确定</button>
+          </view>
+          <view class="btnbox" wx-if="{{img == 'true1'}}">
+            <button style="background: #e0e0e0" class="zan-btn zan-btn--primary" @tap="close">取消</button>
+          </view>
+        </view>
+      </view>
+    </view>
+</template>
+<script>
+    import wepy from 'wepy'
+    import {ctzenSignin} from '@/api/sign'
+    import {saveUserInfo, saveToken} from '@/utils/utils'
+    import {facenImg} from '@/api/user'
+    export default class ComeinLiving extends wepy.page {
+      config = {
+        navigationBarTitleText: '身份认证'
+      }
+      data={
+        hasToken: false,
+        userInfo: null,
+        wxUserInfo: null,
+        name: '',
+        idcard: '',
+        isFaceAuth: 0,
+        loading: false,
+        srcs: null,
+        pickerShow: false,
+        img: false,
+        goBack: false,
+        noblive: false,
+      }
+      onShow() {
+        // console.log(this.hasToken + '00')
+        if (this.hasToken === true) {
+          wx.reLaunch({
+            url: '/pages/home/home'
+          })
+        }
+      }
+      onLoad(back) {
+        this.goBack = !!back
+        this.img = false
+        this.ctx = wx.createCameraContext()
+      }
+      submit(type, cb) {
+        let self = this
+        ctzenSignin({
+          name: this.name,
+          idcard: this.idcard
+          // name: '冷云飞',
+          // idcard: '500383199406238737'
+        })
+          .then((data = {}) => {
+            this.loading = false
+            wx.setStorage({
+              key: 'logonData',
+              data: data
+            })
+            // 登录成功 保存token
+            saveToken(data.token)
+            // 保存用户信息
+            this.hasToken = true
+            const {user = {}} = data
+            saveUserInfo(Object.assign(data, {...user}, {avatarUrl: user.headPortrait}))
+            if (data.laceResult.length === 1 && self.noblive === false) {
+              self.noblive === true
+              // let params = `caseid=${data.laceResult[0].lawCase.lawCaseId}&meetingid=${data.laceResult[0].meetingId}&userid=${data.laceResult[0].lawCase.personnelId}&role=${data.laceResult[0].lawCase.role}`
+              let params = `caseid=${data.laceResult[0].lawCaseId}&meetingid=${data.laceResult[0].lawMeettingId}&userid=${data.laceResult[0].personnelId}&role=${data.laceResult[0].role}`
+              wx.navigateTo({url: `/pages/mediate/live?${params}`})
+              self.noblive === false
+              this.$apply()
+            } else {
+              wx.reLaunch({
+                url: '/pages/home/home'
+              })
+            }
+            this.$apply()
+            cb && cb()
+          })
+          .catch((res) => {
+            wx.showModal({
+              title: '提示',
+              content: res.message,
+              success: function (sm) {
+                if (sm.confirm) {
+                  if (self.goBack) {
+                    wx.navigateBack()
+                  } else {
+                    wx.reLaunch({
+                      url: '/pages/sign/signin'
+                    })
+                  }
+                } else if (sm.cancel) {
+                  console.log('取消')
+                }
+              }
+            })
+          })
+      }
+      methods={
+        close() {
+          this.img = false
+        },
+        camaras() {
+          let that = this
+          this.ctx.takePhoto({
+            quality: 'high',
+            success: (res) => {
+              this.img = true
+              this.setData({
+                src: res.tempImagePath
+              })
+              that.loading = true
+              this.srcs = res.tempImagePath
+              facenImg({
+                filePath: this.srcs,
+                name: 'file',
+                formData: {
+                  'name': 'xxx.png',
+                  'mimeType': 'image/png'
+                }
+              })
+                .then(({url = ''} = {}) => {
+                  that.flag = false
+                  that.$apply()
+                  if (!url) {
+                    wx.showToast({
+                      title: '身份证识别失败！',
+                      icon: 'none',
+                      duration: 2000
+                    })
+                    that.img = false
+                    that.loading = false
+                    return
+                  }
+                  // that.submit()
+                  let params = {
+                    'appid': '1255978857',
+                    'url_list': [url]
+                  }
+                  return new Promise((resolve, reject) => {
+                    wx.request({
+                      url: 'https://recognition.image.myqcloud.com/ocr/idcard',
+                      method: 'POST',
+                      data: params,
+                      header: {'Authorization': 'fpEvd1ISDfTuQLAqDIeENMI9abdhPTEyNTU5Nzg4NTcmaz1BS0lENHpmRVpraFQxTFFHc0dmSnpRY1lGZ3NwWDJKTWdrNkQmZT0xNTM4NTMxODEzJnQ9MTUzNTkzOTgxMyZyPTM0NTQ5NzQ0NzcwJmY9', 'Content-Type': 'application/json'},
+                      success: function(res) {
+                        that.name = res.data.result_list[0].data.name
+                        that.idcard = res.data.result_list[0].data.id
+                        // that.loading = false
+                        if (res.data.result_list[0].code === 0) {
+                          that.submit()
+                        }
+                        if (res.data.result_list[0].code !== 0) {
+                          wx.showToast({
+                            title: '身份证识别失败！',
+                            icon: 'none',
+                            duration: 3000
+                          })
+                          that.img = false
+                          that.loading = false
+                          // that.submit()
+                        }
+                        that.$apply()
+                        resolve(res.data)
+                      }
+                    })
+                  })
+                })
+                .catch(() => {
+                  this.loading = false
+                  this.$apply()
+                })
+            }
+          })
+        },
+      }
+    }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+    .container{
+      background-color:$white;
+    }
+    .zan-field {
+      padding: 0 15px;
+    }
+    .zan-field__title {
+      color: #333;
+      min-width: 65px;
+      padding-right: 10px;
+      font-size: 28rpx;
+      font-weight: bold;
+    }
+    .text-right{
+      text-align: right;
+    }
+    .zan-field__input {
+      flex: 1;
+      line-height: 1.6;
+      padding: 10px 0;
+      min-height: 22px;
+      height: auto;
+      font-size: 28rpx;
+    }
+    .btnbox{
+      width: 80%;
+      margin: 15px auto;
+    }
+
+</style>

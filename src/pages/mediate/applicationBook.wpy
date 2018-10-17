@@ -1,0 +1,215 @@
+<template>
+<view class="container">
+  <view class="zan-panel" wx:for="{{ list }}" wx:key="{{index}}">
+    <view class="zan-cell box-title">
+      <view class="zan-cell__hd section-title">{{item.type === 2? '被申请方' : '申请方'}}</view>
+    </view>
+    <block wx:for="{{ item.personal }}" wx:for-item="items" wx:key="{{index}}">
+      
+      <view class="zan-cell first-box">
+        <view class="zan-cell__hd zan-field__title">{{item.type === 2?'被申请人类别':'申请人类别'}}：</view>
+        <view class="zan-cell__bd">{{items.role == 13 || items.role == 12 || items.role == 22 || items.role == 23 ?'企业法人' : '自然人'}}{{items.role == 11?'共同诉讼人':''}}</view>
+      </view>
+
+      <view class="zan-cell">
+        <view class="zan-cell__hd zan-field__title">{{item.type === 2?'被申请人':'申请人'}}：</view>
+        <view class="zan-cell__bd">{{items.orgName?items.orgName:items.actualName}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.procreditCode}}">
+        <view class="zan-cell__hd zan-field__title">社会信用代码：</view>
+        <view class="zan-cell__bd" >{{items.procreditCode}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.lname && items.orgName}}">
+        <view class="zan-cell__hd zan-field__title">常住地址：</view>
+        <view class="zan-cell__bd ">{{items.lname}}{{items.address}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.orgName && items.actualName}}">
+        <view class="zan-cell__hd zan-field__title">法定代表人：</view>
+        <view class="zan-cell__bd ">{{items.actualName}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.sex}}">
+        <view class="zan-cell__hd zan-field__title">性别：</view>
+        <view class="zan-cell__bd ">{{items.sex}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.idCard}}">
+        <view class="zan-cell__hd zan-field__title">身份证号：</view>
+        <view class="zan-cell__bd ">{{items.idCard}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.phone}}">
+        <view class="zan-cell__hd zan-field__title">联系方式：</view>
+        <view class="zan-cell__bd ">13988888888</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.lname && !items.orgName}}">
+        <view class="zan-cell__hd zan-field__title">常住地址：</view>
+        <view class="zan-cell__bd ">{{items.lname}}{{items.address}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.agent.actualName}}">
+        <view class="zan-cell__hd zan-field__title">{{items.agent.role === 41 || items.agent.role === 46? '特别授权代理人' : '一般授权代理人'}}：</view>
+        <view class="zan-cell__bd">{{items.agent.actualName}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.agent.sex}}">
+        <view class="zan-cell__hd zan-field__title">性别：</view>
+        <view class="zan-cell__bd ">{{items.agent.sex}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.agent.idCard}}">
+        <view class="zan-cell__hd zan-field__title">身份证号：</view>
+        <view class="zan-cell__bd ">{{items.agent.idCard}}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{items.agent.phone}}">
+        <view class="zan-cell__hd zan-field__title">联系方式：</view>
+        <view class="zan-cell__bd ">{{items.agent.phone}}</view>
+      </view>
+    </block>
+  </view>
+  <!-- 申请事项 -->
+  <view class="zan-panel">
+    <view class="zan-cell box-title">
+      <view class="zan-cell__hd section-title">申请事项：</view>
+    </view>
+    <view class="box-content">{{message.lawMediationBook.problem}}</view>
+  </view>
+  <!-- 纠纷事实与理由 -->
+  <view class="zan-panel">
+    <view class="zan-cell box-title">
+      <view class="zan-cell__hd section-title">纠纷事实与理由：</view>
+    </view>
+    <view class="box-content">{{message.lawMediationBook.content}}</view>
+  </view>
+  <!-- 申请受理的调解机构 -->
+  <view class="zan-panel">
+    <view class="zan-cell box-title">
+      <view class="zan-cell__hd section-title">申请受理的调解机构：</view>
+    </view>
+    <view class="box-content">{{message.lawMediationBook.organizationName}}</view>
+  </view>
+  <!-- 签字的列表 -->
+  <view class="zan-panel">
+    <view class="list-box" wx:for="{{message.lawWholeConfirms}}" wx:key="index">
+      <view class="list-title">{{item.title}}({{item.personnelName}})：{{item.isConfirm?'已确认':'未确认'}}</view>
+      <view class="list-img" wx:if="{{item.signature}}"><image src="{{host}}{{item.signature}}"></image></view>
+    </view>
+  </view>
+  <!-- 确认按钮 -->
+  <view class="zan-panel" wx:if="{{message.showConfirmButton}}">
+    <view class="btnbox">
+      <navigator url="confirm?caseid={{caseId}}&confirm=1&code={{code}}" hover-class="navigator-hover">
+        <view class="zan-btn zan-btn--primary">签字确认</view>
+      </navigator>
+    </view>
+  </view>
+</view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {HOST} from '@/utils/constants'
+import { getDocument } from '@/api/mediate'
+
+export default class Document extends wepy.page {
+  config = {
+    navigationBarTitleText: '调解申请书'
+  }
+
+  data = {
+    code: '',
+    caseId: '',
+    caseNo: '',
+    list: [],
+    message: '',
+    host: HOST
+  }
+  computed = {
+  }
+  methods = {
+  }
+  getBook() {
+    var _this = this
+    wx.showLoading()
+    getDocument({lawCaseId: this.caseId}).then((data = {}) => {
+      wx.hideLoading()
+      _this.list = [{type: 1, personal: data.App}, {type: 2, personal: data.Res}]
+      _this.message = data
+      _this.$apply()
+    })
+  }
+  onShow() {
+    var _this = this
+    getDocument({lawCaseId: this.caseId}).then((data = {}) => {
+      _this.message = data
+      _this.$apply()
+    })
+  }
+
+  onLoad({code, caseid}) {
+    this.code = code
+    this.caseId = caseid
+    console.log(this.caseId)
+    this.getBook()
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables.scss';
+  .container{
+    background-color: $gray-f8;
+    .zan-cell-color{
+      color: #255787;
+    }
+    .zan-cell__bd{
+      color: #333333;
+    }
+    .box-title{
+      .section-title{
+        margin-bottom: 0 !important;
+        color:#333333;
+        font-weight: 400;
+      }
+    }
+    .box-content{
+      width: auto;
+      padding: 30rpx;
+      min-height: 50rpx;
+    }
+    .list-box{
+      width: auto;
+      padding: 0 30rpx;
+      height: 100rpx;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      .list-img{
+        min-width: 200rpx;
+        height: 80rpx;
+        padding: 10rpx;
+        image{
+          width: 100%;
+          height: 80rpx;
+        }
+      }
+    }
+    .btnbox{
+      width: auto;
+      padding: 0 30rpx 30rpx;
+      background-color:#fafafa;
+    }
+    .first-box{
+      border-top: 20rpx solid #E5E5E5;
+    }
+  }
+  .zan-field__title {
+    min-width: 100px;
+    color:#888888;
+  }
+</style>

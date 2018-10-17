@@ -1,0 +1,603 @@
+<template>
+
+  <zan-tab componentId="tab" :tab.sync="tab" @zanTabChange.user="zanTabChange"></zan-tab>
+
+  <tab-content :tab.sync="tab">
+
+    <view class="tab-pane {{ tab.selectedId === 'tab1' ? 'active' : '' }}" hidden="{{divshow}}">
+      <scroll-view scroll-y style="height:100%;" >
+        <view class="content-padded">
+          <view class="zan-panel no-bd no-mg cell-btm">
+            <view class="zan-cell zan-cell--access">
+              <view class="zan-cell__icon icon icon-pinggufuwu progress-bar--primary sj-icon"></view>
+              <view class="zan-cell__hd">进行中事件</view>
+              <view class=" zan-cell__bd"><text class="text-orange zan-font-bold zan-font-14 text">  {{ sumNum }} </text>件</view>
+            </view>
+
+            <navigator class="zan-cell zan-cell--access"  url="my-consultation" style="padding: 15px">
+              <view class="zan-cell__hd">我的咨询</view>
+              <view class="zan-cell__bd zan-text-right"><text class="text-orange zan-font-bold">{{ consultNum }}</text> 件</view>
+              <view class="zan-cell__ft"></view>
+            </navigator>
+            <!--我的评估 目前先去掉 后期会有这个功能-->
+            <navigator class="zan-cell zan-cell--access" url="my-assessment" style="display: none">
+              <view class="zan-cell__h">我的评估</view>
+              <view class="zan-cell__bd zan-text-right"><text class="text-orange zan-font-bold">{{ evalauteNum }}</text> 件</view>
+              <view class="zan-cell__ft"></view>
+            </navigator>
+
+            <navigator class="zan-cell zan-cell--access" url="my-mediate" style="padding: 15px">
+              <view class="zan-cell__hd">我的调解</view>
+              <view class="zan-cell__bd zan-text-right"><text class="text-orange zan-font-bold">{{disputeNum}}</text> 件</view>
+              <view class="zan-cell__ft"></view>
+            </navigator>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+
+    <view class="tab-pane {{ tab.selectedId === 'tab2' ? 'active' : '' }}">
+      <scroll-view scroll-y style="height:100%;" >
+        <view class="content-padded" hidden="{{show}}" style="position:relative;top:60rpx;">
+          <view class="white-bg">
+            <view class="avatar">
+              <image src="{{avatarUrl}}" mode="aspectFill" style="width:100%;height:100%;" @error="onError"></image>
+            </view>
+            <view class="zan-center gray-dark zan-font-12" style="padding-top:100rpx;">仅支持JPG、PNG图片文件，且文件应小于5M</view>
+            <view class="zan-cell">
+              <view class="zan-cell__hd zan-field__title gray-dark">真实姓名:</view>
+              <view class=" zan-cell__bd">{{ userInfo.actualName}}</view>
+            </view>
+            <view class="zan-cell">
+              <view class="zan-cell__hd zan-field__title gray-dark">性别:</view>
+              <view class=" zan-cell__bd">{{ sex }}</view>
+            </view>
+            <view class="zan-cell">
+              <view class="zan-cell__hd zan-field__title gray-dark">身份证号:</view>
+              <view class=" zan-cell__bd">{{userInfo.idCard}}</view>
+            </view>
+            <view class="zan-cell">
+              <view class="zan-cell__hd zan-field__title gray-dark">现居地址:</view>
+              <view class=" zan-cell__bd">{{userInfo.lname}}</view>
+            </view>
+            <view class="zan-cell">
+              <view class="zan-cell__hd zan-field__title gray-dark">详细地址:</view>
+              <view class=" zan-cell__bd">{{address}}</view>
+            </view>
+            <view class="zan-cell">
+              <view class="zan-cell__hd zan-field__title gray-dark">户籍地址:</view>
+              <view class="zan-cell__bd">{{userInfo.domicilelname}}</view>
+            </view>
+
+            <view class="content-padded zan-center">
+              <button class="zan-btn zan-btn--primary zan-btn--small zan-btn--dashed" @tap="bjinfo" hidden="{{show}}">
+                <text class="icon icon-bianji-copy-copy"></text> 编辑个人资料
+              </button>
+            </view>
+          </view>
+        </view>
+
+        <view class="content-padded" hidden="{{hidden}}" style="position:relative;top:60rpx;">
+          <view class="white-bg">
+            <view class="avatar">
+              <image src="{{avatarUrl}}" mode="aspectFill" style="width:100%;height:100%;" @error="onError"></image>
+            </view>
+            <view class=" icon icon-xiangji" @tap="changeImg"></view>
+            <view class="zan-center gray-dark zan-font-12" style="padding-top:100rpx;">仅支持JPG、PNG图片文件，且文件应小于5M</view>
+            <view class="zan-cell zan-field">
+              <view class="zan-cell__hd zan-field__title gray-dark">真实姓名:</view>
+              <input class="zan-field__input zan-cell__bd" disabled="{{ userInfo.isAuthenticate === 1 }}" value="{{ userInfo.actualName }}" @input="userInput('name')" type="text"/>
+            </view>
+            <picker
+              mode="selector"
+              class="zan-hairline--bottom"
+              range="{{ area }}"
+              value="{{ areaIndex }}"
+              @change="onAreaChange">
+              <view class="zan-cell zan-field zan-cell--access">
+                <view class="zan-cell__hd zan-field__title gray-dark">性别:</view>
+                  <view class="zan-field__input zan-cell__bd">{{area[areaIndex]}}</view>
+                <view class="zan-cell__ft"></view>
+              </view>
+            </picker>
+            <view class="zan-cell zan-field">
+              <view class="zan-cell__hd zan-field__title gray-dark">身份证号:</view>
+              <input type="idcard" class="zan-field__input zan-cell__bd" disabled="{{ userInfo.isAuthenticate === 1 }}" value="{{userInfo.idCard}}" @input="userInput('number')" maxlength="18"/>
+            </view>
+            <view class="zan-cell zan-cell--access" @tap="showPicker('nowAddShow')">
+              <view class="zan-cell__hd zan-field__title gray-dark">现居地址:</view>
+              <view class=" zan-cell__bd area_select" wx:if="{{ !!nowaddressName }}" >{{nowaddressName}}</view>
+              <view class=" zan-cell__bd area_select" wx:else>{{userInfo.lname}}</view>
+              <view class="zan-cell__ft"></view>
+            </view>
+            <view class="zan-cell zan-field">
+              <view class="zan-cell__hd zan-field__title gray-dark">详细地址:</view>
+              <input type="text" class="zan-field__input zan-cell__bd"  value="{{address}}" @input="userInput('address')"/>
+            </view>
+            <view class="zan-cell zan-cell--access" @tap="showPicker('oldAddShow')">
+              <view class="zan-cell__hd zan-field__title gray-dark">户籍地址:</view>
+              <view class=" zan-cell__bd area_select" wx:if="{{ !!oldaddressName }}" >{{oldaddressName}}</view>
+              <view class=" zan-cell__bd area_select" wx:else >{{ userInfo.domicilelname }}</view>
+              <view class="zan-cell__ft"></view>
+            </view>
+            <view class="btnbox">
+              <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" hidden="{{hidden}}" @tap="saveinfo">保存</button>
+            </view>
+          </view>
+        </view>
+        <view class="btnbox">
+          <view class="zan-btn zan-btn--primary" hidden="{{show}}" @tap="out">退出登录</view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="tab-pane settings {{ tab.selectedId === 'tab3' ? 'active' : '' }}">
+      <scroll-view scroll-y style="height:100%;">
+        <view class="content-padded">
+          <view class="zan-panel no-bd no-mg cell-btm">
+            <!--安全级别   暂时不展示-->
+            <!--<view class="zan-cell">-->
+              <!--<view style="margin: 0 10px" class="zan-cell__icon">-->
+                <!--<view class="icon icon-anquanguanli_jiaodian text-primary" style="font-size:34px;"></view>-->
+              <!--</view>-->
+              <!--<view class="zan-cell__hd" >-->
+                <!--<view class="zan-cell__text">-->
+                  <!--<view class="zan-font-16">您的安全等级: <text class="text-orange">中</text></view>-->
+                <!--</view>-->
+                <!--<view class="zan-cell__desc">完成全部账号绑定，提升账号安全</view>-->
+              <!--</view>-->
+            <!--</view>-->
+
+            <view class="zan-cell zan-cell--access" @tap="realName" hover-class="button-hover">
+              <view class="zan-cell__icon icon {{ auth ? 'icon-duihaocheckmark17 text-primary' : 'icon-jinggao text-orange' }} "></view>
+              <view class="zan-cell__hd">
+                <view class="zan-cell__text">身份认证</view>
+                <view class="zan-cell__desc">提升账户安全级别和信任级别,认证后将无法修改认证信息</view>
+              </view>
+              <view class="zan-cell__ft">
+                <view class="zan-btn zan-btn--mini zan-btn--text">{{auth ? '已认证':'认证'}}</view>
+              </view>
+            </view>
+
+            <navigator class="zan-cell zan-cell--access" url="modify-password">
+              <view class="zan-cell__icon icon icon-duihaocheckmark17 text-primary"></view>
+              <view class="zan-cell__hd">
+                <view class="zan-cell__text">登录密码</view>
+                <view class="zan-cell__desc">密码设置六位数以上</view>
+              </view>
+              <view class="zan-cell__ft">
+                <view class="zan-btn zan-btn--mini zan-btn--text">修改</view>
+              </view>
+            </navigator>
+
+            <navigator class="zan-cell zan-cell--access" url="modify-mobile">
+              <view class="zan-cell__icon icon {{ userInfo.isMobileAuth === 1 ? 'icon-duihaocheckmark17 text-primary' : 'icon-jinggao text-orange' }}"></view>
+              <view class="zan-cell__hd">
+                <view class="zan-cell__text">绑定手机</view>
+                <view class="zan-cell__desc">绑定手机,可以提高安全性及找回密码等功能</view>
+              </view>
+              <view class="zan-cell__ft">
+                <view class="zan-btn zan-btn--mini zan-btn--text">修改</view>
+              </view>
+            </navigator>
+
+            <navigator class="zan-cell zan-cell--access" url="modify-email">
+              <view class="zan-cell__icon icon {{ userInfo.email ? 'icon-duihaocheckmark17 text-primary' : 'icon-jinggao text-orange' }}"></view>
+              <view class="zan-cell__hd">
+                <view class="zan-cell__text">绑定邮箱</view>
+                <view class="zan-cell__desc">绑定邮箱,可以提高安全性和信息的通知</view>
+              </view>
+              <view class="zan-cell__ft">
+                <view class="zan-btn zan-btn--mini zan-btn--text">{{ userInfo.email ? '修改':'设置'}}</view>
+              </view>
+            </navigator>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+  </tab-content>
+
+  <now-address :show.sync="nowAddShow" @change.user="hanldePickerChangeNow"></now-address>
+
+  <old-address :show.sync="oldAddShow" @change.user="hanldePickerChangeOld"></old-address>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {getHomeData} from '@/api/home' // 获取我的事件数量
+import {updateSelfUser} from '@/api/user'
+import {uploadAvatar} from '@/api/common'
+import {validate} from '@/utils/validate'
+import ZanTab from '@/components/zan-tab'
+import TabContent from '@/components/tab-content'
+import AddressPicker from '@/components/address-picker'
+import {
+  getUserInfo,
+  getWxUserInfo,
+  saveUserInfo,
+  clearUserStorage,
+  validateImgFile
+} from '@/utils/utils'
+
+const tabOptisons = {
+  list: [
+    {id: 'tab1', title: '我的事件'},
+    {id: 'tab2', title: '个人资料'},
+    {id: 'tab3', title: '安全设置'},
+  ],
+  fixed: true,
+  selectedId: 'tab1'
+}
+
+export default class User extends wepy.page {
+  config={
+    disabledScroll: true,
+    navigationBarTitleText: '个人中心'
+  }
+  components={
+    'zan-tab': ZanTab,
+    'tab-content': TabContent,
+    'now-address': AddressPicker,
+    'old-address': AddressPicker,
+  }
+  data={
+    tab: {...tabOptisons},
+    divshow: true,
+    show: false,
+    hidden: true,
+    disable: false,
+    name: '',
+    number: '',
+    sex: '',
+    address: '',
+    area: ['男', '女'],
+    areaIndex: 0,
+    date: '',
+    userInfo: null,
+    wxInfo: null,
+    nowAddShow: false,
+    oldAddShow: null,
+    nowaddress: [],
+    oldaddress: [],
+    nowareaCode: '',
+    oldareaCode: '',
+    loading: false,
+    consultNum: 0,
+    disputeNum: 0,
+    evalauteNum: 0,
+    sumNum: 0,
+    auth: false, // 实名认证和人脸识别都通过才会是true,
+    timestamp: 0,
+    imgerror: false
+  }
+  computed = {
+    nowaddressName() {
+      return this.nowaddress.map(({name}) => name).join('')
+    },
+    oldaddressName() {
+      return this.oldaddress.map(({name}) => name).join('')
+    },
+    avatarUrl() {
+      // 服务器返回的用户头像
+      let data = this.userInfo
+      if (data && data.avatarUrl && !this.imgerror) {
+        if (data.avatarUrl.indexOf('?') > -1) {
+          return data.avatarUrl
+        }
+
+        return `${data.avatarUrl}?_=${this.timestamp}`
+      }
+
+      if (this.imgerror) {
+        return '/images/sign/avatar_default.png'
+      }
+
+      // 微信头像
+      data = this.wxInfo
+      if (data && data.avatarUrl) {
+        return data.avatarUrl
+      }
+
+      // 默认头像
+      return '/images/sign/avatar_default.png'
+    }
+  }
+
+  onLoad({event}) {
+    // 用户提交完咨询案件  直接展示 我的事件tab
+    // if (event) {
+    //   this.tab.selectedId = 'tab3'
+    // }
+
+    this.timestamp = Date.now()
+
+    // 从缓存中获取用户信息
+    this.userInfo = getUserInfo()
+    this.name = this.userInfo.actualName
+    this.address = this.userInfo.address
+    this.number = this.userInfo.idCard
+    let index = this.area.indexOf(this.userInfo.sex)
+    console.log(index)
+
+    this.areaIndex = index
+
+    this.sex = this.area[this.areaIndex]
+    this.nowareaCode = this.userInfo.areasCode
+    this.oldareaCode = this.userInfo.registration
+    this.auth = this.userInfo.isAuthenticate === 1 && this.userInfo.isFaceAuth === 1
+    this.$apply()
+    getWxUserInfo().then(data => {
+      this.wxInfo = data
+    })
+  }
+  onShow() {
+    // 获取我的事件 数量
+    getHomeData().then((data = {}) => {
+      this.disputeNum = data.disputeNum
+      this.consultNum = data.consultNum
+      this.evalauteNum = data.evalauteNum
+      // this.sumNum = data.disputeNum + data.consultNum + (data.evalauteNum || 0)
+      this.sumNum = data.disputeNum + data.consultNum
+      this.$apply()
+    })
+  }
+  onReady() {
+    this.divshow = false
+    this.$apply()
+  }
+  methods={
+    onError() {
+      this.imgerror = true
+      this.$apply()
+      console.log(this.imgerror)
+    },
+    zanTabChange(id) {
+      this.tab.selectedId = id
+
+      this.$apply()
+    },
+    // 用户输入
+    userInput(field, {detail}) {
+      this[field] = detail.value
+    },
+    // 选择性别
+    onAreaChange(e) {
+      this.areaIndex = e.detail.value
+      this.sex = this.area[this.areaIndex]
+      this.$apply()
+    },
+    // 是否认证
+    realName() {
+      if (this.auth) {
+        wx.showToast({
+          title: '您已通过实名认证',
+          icon: 'none',
+          duration: 2000
+        })
+      } else {
+        wx.navigateTo({url: 'real-name-authentication'})
+      }
+    },
+    // 点击选择省市区
+    showPicker(field) {
+      this[field] = true
+      this.$apply()
+    },
+    // 点击选择现住址
+    hanldePickerChangeNow(list) {
+      this.nowaddress = [...list]
+
+      const item = list.pop()
+
+      this.nowareaCode = item ? item.code : ''
+    },
+    // 点击选择户籍
+    hanldePickerChangeOld(list) {
+      this.oldaddress = [...list]
+
+      const item = list.pop()
+
+      this.oldareaCode = item ? item.code : ''
+    },
+    //  编辑按钮
+    bjinfo() {
+      this.hidden = false
+      this.show = true
+    },
+    // 选择头像
+    changeImg() {
+      wx.chooseImage({
+        count: 1, // 默认9
+        success: ({tempFiles}) => {
+          if (!validateImgFile(tempFiles, 5 * 1024 * 1024)) {
+            return
+          }
+          // 上传头像
+          console.log(tempFiles[0].path)
+          uploadAvatar({
+            filePath: tempFiles[0].path,
+            name: 'file',
+            formData: {
+              'name': 'xx.png',
+              'mimeType': 'image/png'
+            }
+          })
+          .then(({url = ''} = {}) => {
+            console.log(url)
+            this.userInfo = {...this.userInfo, avatarUrl: `${url}?_=${Date.now()}`}
+            saveUserInfo(this.userInfo)
+            this.$apply()
+          })
+        }
+      })
+    },
+    // 保存提交用户信息
+    saveinfo() {
+      if (this.validata()) {
+        this.loading = true
+        updateSelfUser({
+          areaCode: this.nowareaCode,
+          domicileCode: this.oldareaCode,
+          actualName: this.name,
+          idCard: this.number,
+          address: this.address,
+          nation: '',
+          sex: this.sex
+        }).then((data = {}) => {
+          // 更新用户信息
+          const {
+            sex = '',
+            lname = '',
+            user = {},
+            address = '',
+            domicileName = ''
+          } = data
+          this.hidden = true
+          this.show = false
+          this.loading = false
+          this.userInfo = {
+            ...data,
+            sex,
+            lname,
+            address,
+            domicilelname: domicileName,
+            avatarUrl: `${user.headPortrait}?_=${Date.now()}`,
+            email: this.userInfo.email
+          }
+
+          saveUserInfo(this.userInfo)
+
+          this.$apply()
+        })
+      }
+    },
+    // 用户点击退出按钮
+    out() {
+      wx.showModal({
+        content: '您确定要退出该账号吗？',
+        success: function({confirm}) {
+          if (confirm) {
+            clearUserStorage()
+            wx.reLaunch({url: '/pages/home/home'})
+          }
+        }
+      })
+    }
+  }
+
+  validata() {
+    return validate({
+      name: {
+        required: '请输入姓名',
+      },
+      number: {
+        required: '请输入身份证号',
+        pattern: val => /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/.test(val),
+        message: '身份证号输入错误'
+      }
+    }, this)
+  }
+}
+</script>
+
+<style lang="scss">
+  @import "../../styles/variables";
+
+  .avatar {
+    display: block;
+    position: absolute;
+    width: 150rpx;
+    height: 150rpx;
+    top: -30rpx;
+    left: 50%;
+    margin-left: -75rpx;
+    border-radius: 50%;
+    overflow: hidden;
+    image{
+      display: block;
+      width: 150rpx;
+      height: 150rpx;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+  }
+  .tab-pane,.content-padded,scroll-view,.content-padded{
+    width: 100vm;
+  }
+  .zan-field__input {
+    font-size: 28rpx;
+    &[disabled]{
+      color: #999;
+    }
+  }
+  .zan-text-right{
+    text-align: right;
+  }
+  .settings {
+    .zan-cell__icon {
+      align-self: flex-start;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .zan-cell__ft {
+      padding-left: 20px;
+      .zan-btn {
+        white-space: nowrap;
+        font-size:14px;
+        font-weight: bold;
+      }
+    }
+    .zan-cell__hd{
+      flex: 1;
+    }
+  }
+  .cell-btm .zan-cell,
+  .zan-cell.cell-btm {
+    &::after {
+      width: auto;
+      left: 15px;
+      right: 15px;
+      transform: scaleY(0.5);
+    }
+  }
+
+  .zan-font-20{
+    font-size: 34px;
+  }
+  .white-bg {
+    overflow:hidden;
+  }
+  .zan-hairline--bottom::after{
+    left: 15px;
+  }
+  .btnbox{
+    width: 80%;
+    margin: 20px auto;
+  }
+  .sj-icon{
+    padding: 5px;
+    margin-right: 10px;
+    line-height: 1;
+    font-size: 20px;
+    color: $white;
+    text-align: center;
+    border-radius: 50%;
+  }
+  .icon-xiangji{
+    width:170rpx;
+    height:180rpx;
+    display:block;
+    overflow:hidden;
+    position:absolute;
+    text-align:right;
+    line-height:230rpx;
+    font-size:40rpx;
+    top:-30rpx;
+    left:50%;
+    z-index:99;
+    margin-left:-90rpx;
+  }
+</style>

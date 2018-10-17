@@ -1,0 +1,182 @@
+<template>
+  <view class="container">
+    <view class="zan-panel" style="margin-top: 0">
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">手机号</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入手机号" type="number" disabled="{{true}}" @input="input('phone')" value="{{phone}}" />
+        <view class="zan-cell__ft">
+          <button class="zan-btn zan-btn--mini zan-btn--primary zan-font-12" @tap="sendmessg" disabled="{{disable}}">{{getmsg}}</button>
+        </view>
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">验证码</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入验证码" type="number"  @input="input('msg')" maxlength="4" />
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">邮箱</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入邮箱" type="email"  @input="input('email')" value="{{email}}"/>
+      </view>
+
+    </view>
+    <view class="btnbox">
+      <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="submit">提交</button>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {getUserInfo, saveUserInfo} from '@/utils/utils'
+  import {validate, patterns} from '@/utils/validate'
+  import {updateEmail} from '@/api/user'
+  import {getVerifyCode} from '@/api/sign'
+  export default class ModifyEmail extends wepy.page {
+    config={
+      navigationBarTitleText: '修改绑定邮箱'
+    }
+    onLoad() {
+      this.userInfo = getUserInfo()
+      this.phone = this.userInfo.phone
+      this.email = this.userInfo.email
+    }
+    data={
+      phone: '',
+      msg: '',
+      email: '',
+      getmsg: '获取验证码',
+      loading: false,
+      disable: false,
+      userInfo: null
+    }
+    methods={
+      input(field, {detail}) {
+        this[field] = detail.value.trim()
+        this.$apply()
+      },
+      submit() {
+        if (this.validate()) {
+          this.loading = true
+          this.$apply()
+          updateEmail({
+            oldPhone: this.phone,
+            verifyCode: this.msg,
+            email: this.email
+          }).then(() => {
+            this.loading = false
+            this.userInfo.email = this.email
+            saveUserInfo(this.userInfo)
+            this.$apply()
+            wx.showModal({
+              content: '邮箱修改成功',
+              showCancel: false,
+              success: () => {
+                wx.navigateBack({
+                  delta: 1
+                })
+              }
+            })
+          }).catch(() => {
+            this.loading = false
+            this.$apply()
+          })
+
+        }
+      },
+      // 发送验证码
+      sendmessg() {
+        if (this.validate(true)) {
+          wx.showLoading()
+          getVerifyCode({
+            oldPhone: this.phone
+          })
+            .then(() => {
+              wx.hideLoading()
+              wx.showToast({title: '短信验证码已发送至您的手机，请注意查收！', icon: 'none'})
+              this.countdown()
+            })
+            .catch(() => {
+              wx.hideLoading()
+            })
+        }
+      }
+    }
+    validate(isBreak = false) {
+      let valid = validate({
+        phone: {
+          required: '请输入手机号',
+          pattern: patterns.phone,
+          message: '请输入正确的手机号'
+        }
+      }, this)
+
+      if (isBreak) {
+        return valid
+      }
+      if (valid) {
+        valid = validate({
+          phone: {
+            required: '请输入手机号',
+            pattern: patterns.phone,
+            message: '请输入正确的手机号'
+          },
+          msg: {
+            required: '请输入验证码',
+          },
+          email: {
+            required: '请输入邮箱',
+            pattern: patterns.email,
+            message: '请输入正确的邮箱',
+          },
+        }, this)
+      }
+      return valid
+    }
+    // 倒计时
+    countdown(t = 60) {
+      if (--t > 0) {
+        this.disable = true
+        this.getmsg = `${t}s后再次发送`
+        setTimeout(() => this.countdown(t), 1000)
+      } else {
+        this.getmsg = '再次获取验证码'
+        this.disable = false
+      }
+      this.$apply()
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    background-color:$white;
+  }
+  .zan-field {
+    padding: 0 15px;
+  }
+  .zan-field__title {
+    color: #333;
+    min-width: 65px;
+    padding-right: 10px;
+    font-size: 28rpx;
+    font-weight: bold;
+  }
+  .text-right{
+    text-align: right;
+  }
+  .zan-field__input {
+    flex: 1;
+    line-height: 1.6;
+    padding: 10px 0;
+    min-height: 22px;
+    height: auto;
+    font-size: 28rpx;
+  }
+  .btnbox{
+    width: 80%;
+    margin: 25px auto;
+  }
+</style>

@@ -1,0 +1,173 @@
+<template>
+   <view class="container">
+    <view class="section">
+      <view wx:if="{{ showimg }}" class="banner-top">
+        <image src="/images/home/construction.png"></image>
+      </view>
+      <view class="zan-panel zan-panel--without-border">
+        <view class="zan-font-bold">温馨提示:</view>
+        <view class="" style="line-height: 1.8">如需使用此功能，请移驾至pc官网:</view>
+        <view class="" style="line-height: 1.8">1、访问pc官网：
+          <text selectable class="zan-font-bold text-primary" style="text-decoration:underline">http://yundr.gov.cn</text>
+        </view>
+        <view class="" style="line-height: 1.8">2、使用当前账户登录</view>
+        <view class="" style="line-height: 1.8">3、在首页导航栏，选择"
+          <text class="zan-font-bold text-primary">服务内容</text>"里的"
+          <text class="zan-font-bold text-primary">{{changeword}}服务</text>"，进行{{changeword}}申请。</view>
+      </view>
+      <view class="banner" >
+        <image src="{{ url }}"></image>
+      </view>
+      <view style="position: relative;margin-top:20px;" wx:if="{{ showblock }}"  class="zan-panel zan-panel--without-border miss-border">
+        <view class="pos zan-center">
+          <text class="section-title">仲裁优势</text>
+          <text class="section-title"></text>
+        </view>
+
+        <view class="zan-cell text-primary">
+          <view class="zan-cell__bd">自主、便捷的解纷途径</view>
+        </view>
+        <view class="zan-cell text-primary">
+          <view class="zan-cell__bd">依法独立办案，利于公正</view>
+        </view>
+        <view class="zan-cell text-primary">
+          <view class="zan-cell__bd">”一裁终局“，具法律效力，省时省力</view>
+        </view>
+        <view class="zan-cell text-primary">
+          <view class="zan-cell__bd">不公开审理，保护当事人</view>
+        </view>
+      </view>
+    </view>
+   </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+
+export default class Service extends wepy.page {
+  config = {
+    navigationBarTitleText: '仲裁服务'
+  }
+
+  data = {
+    type: ''
+  }
+
+  computed = {
+    url() {
+      const name = ['assessment', 'arbitration', 'litigation'][this.type]
+      return name ? `/images/home/${name}.png` : ''
+    },
+    showimg() {
+      return this.type !== '1'
+    },
+    showblock() {
+      return this.type === '1'
+    },
+    changeword() {
+      return ['评估', '仲裁', '诉讼'][this.type]
+    }
+  }
+
+  watch = {
+    changeword(val) {
+      val && wx.setNavigationBarTitle({title: `${val}服务`})
+    }
+  }
+
+  onLoad ({type}) {
+    this.type = type
+
+    this.$apply()
+  }
+}
+</script>
+
+<style lang="scss">
+  @import "../../styles/variables";
+  .container {
+    background-color: $white;
+  }
+  .section {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .banner {
+    height: 153px;
+    margin-top: 20px;
+    > image {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .banner-top{
+    margin: 100rpx;
+    text-align: center;
+    > image {
+      width: 270rpx;
+      height: 270rpx;
+    }
+  }
+  .miss-border {
+    border: 1rpx solid $border-color;
+    border-radius: 10px;
+  }
+  .dsline {
+    display: inline-block;
+  }
+
+  .pos {
+    position:absolute;
+    top: 0;
+    left: 50%;
+    z-index: 10000;
+    padding: 0 15px;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    background-color: $white;
+
+    .section-title {
+      padding-right: 10px;
+
+      & + .section-title {
+        padding-left: 10px;
+        padding-right: 0;
+      }
+    }
+
+    & ~ .zan-cell .zan-cell__bd {
+      position: relative;
+      padding-left: 20px;
+
+      &::before {
+        content: '';
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        top: 50%;
+        margin-top: -3px;
+        left: 5px;
+        border-radius: 50%;
+        background-color: $primary-color;
+      }
+    }
+  }
+  .zan-panel {
+    padding-right: 15px;
+  }
+  .zan-cell {
+    overflow: hidden;
+  }
+  .colorbg{
+    background: $white;
+  }
+  .zan-panel {
+    overflow: inherit;
+  }
+  .section-title {
+  }
+  .section-con {
+    padding: 0 15px;
+  }
+</style>

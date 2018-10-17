@@ -1,0 +1,145 @@
+<template>
+  <view class="container">
+
+    <view class="zan-panel">
+
+        <view class="zan-cell">
+          <view class="zan-cell__hd zan-field__title">当事人类型：</view>
+          <view class="zan-cell__bd">{{ rolewz }}</view>
+        </view>
+
+        <view class="zan-cell">
+          <view wx:if="{{ type === 'A' }}" class="zan-cell__hd zan-field__title">申请人：</view>
+          <view wx:else class="zan-cell__hd zan-field__title">被申请人：</view>
+          <view class="zan-cell__bd" wx:if="{{role===1}}">{{list[index].actualName}}</view>
+          <view class="zan-cell__bd" wx:else>{{list[index].orgName}}</view>
+        </view>
+
+        <view class="zan-cell" wx:if="{{role!==1 && list[index].procreditCode}}">
+          <view class="zan-cell__hd zan-field__title">社会信用代码：</view>
+          <view class="zan-cell__bd" >{{list[index].procreditCode}}</view>
+        </view>
+
+        <view class="zan-cell" wx:if="{{role!==1}}">
+          <view class="zan-cell__hd zan-field__title" wx:if="{{role===2}}">法定代表人：</view>
+          <view class="zan-cell__hd zan-field__title" wx:else>机构代表人：</view>
+          <view class="zan-cell__bd " >{{list[index].actualName}}</view>
+        </view>
+
+
+        <view class="zan-cell" wx:if="{{ list[index].sex }}">
+          <view class="zan-cell__hd zan-field__title">性别：</view>
+          <view class="zan-cell__bd">
+            <view>{{list[index].sex}}</view>
+          </view>
+        </view>
+        <view></view>
+
+      <view class="zan-cell">
+        <view class="zan-cell__hd zan-field__title">联系电话：</view>
+        <view class="zan-cell__bd" >{{ list[index].phone }}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{list[index].idCard}}">
+        <view class="zan-cell__hd zan-field__title">身份证：</view>
+        <view class="zan-cell__bd" >{{ list[index].idCard }}</view>
+      </view>
+
+      <view class="zan-cell" wx:if="{{list[index].lname}}">
+        <view class="zan-cell__hd zan-field__title">详细地址：</view>
+        <view class="zan-cell__bd">
+          <view>{{list[index].lname}}{{ list[index].address }}</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{ list[index].agent }}">
+      <view class="zan-panel no-bd--btm">
+        <view class="zan-cell" style="padding:5px 5px 5px 15px;">
+          <view class="zan-cell__bd">代理人</view>
+        </view>
+      </view>
+      <view class="zan-panel no-mg">
+        <view class="zan-cell" wx:if="{{ list[index].agent.actualName }}">
+          <view class="zan-cell__hd zan-field__title">代理人：</view>
+          <view class="zan-cell__bd">{{ list[index].agent.actualName }}</view>
+        </view>
+
+          <view class="zan-cell" wx:if="{{ list[index].agent.sex }}">
+            <view class="zan-cell__hd zan-field__title">性别：</view>
+            <view class="zan-cell__bd">
+              <view>{{ list[index].agent.sex }}</view>
+            </view>
+          </view>
+
+        <view class="zan-cell">
+          <view class="zan-cell__hd zan-field__title">联系电话：</view>
+          <view class="zan-cell__bd">{{ list[index].agent.phone }}</view>
+        </view>
+
+        <view class="zan-cell" wx:if="{{ list[index].agent.idCard }}">
+          <view class="zan-cell__hd zan-field__title">身份证：</view>
+          <view class="zan-cell__bd">{{ list[index].agent.idCard }}</view>
+        </view>
+
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {getItem} from '@/utils/storage'
+
+  export default class PartyInfo extends wepy.page {
+    config = {
+      navigationBarTitleText: '当事人信息'
+    }
+    data={
+      index: 0, // 数组索引
+      list: [], // 数据
+      type: 'A', // A 申请人 R 被申请人
+      role: 0,
+      rolewz: ''
+    }
+    onLoad({type, index, role}) {
+
+      this.index = index
+      // this.role = role
+
+      if (role === '10' || role === '20') {
+        this.rolewz = '自然人'
+        this.role = 1
+      } else if (role === '12' || role === '22') {
+        this.rolewz = '法定代表人'
+        this.role = 2
+      } else if (role === '13' || role === '23') {
+        this.rolewz = '机构代表人'
+        this.role = 3
+      }
+      let listarr = 'Alist'
+      if (type === 'R') {
+        listarr = 'Rlist'
+        this.type = 'R'
+      }
+      getItem(listarr).then((data = {}) => {
+        this.list = data.data
+        console.log(data.data)
+      })
+      this.$apply()
+      // this.Rlist = getItem('Rlist')
+    }
+
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    background-color: $gray-f8;
+  }
+  .zan-field__title {
+    min-width: 100px;
+  }
+</style>

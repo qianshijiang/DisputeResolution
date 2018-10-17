@@ -1,0 +1,417 @@
+<template>
+  <view class="container" style="{{ pickerShow ? 'height:100vh;overflow:hidden;pointer-events:none;' : '' }}">
+    <view class="zan-panel__title">
+      <view class="section-title text-default" style="margin-bottom:0">纠纷详情(必填)</view>
+    </view>
+    <view class="zan-panel no-bd--btm">
+      <picker range="{{ types }}" range-key="name" @change="onTypeChange">
+        <view class="zan-cell zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>纠纷类型：</view>
+          <view class="zan-cell__bd">
+            <view wx:if="{{ !!typeName }}">{{ typeName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+        <view></view>
+      </picker>
+
+      <view class="zan-cell zan-cell--access">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>纠纷发生地：</view>
+        <view class="zan-cell__bd" @tap="showPicker">
+          <view wx:if="{{ !!addressName }}">{{ addressName }}</view>
+          <view wx:else class="gray-dark">请选择</view>
+        </view>
+        <view class="zan-cell__ft"></view>
+      </view>
+
+      <view class="zan-cell zan-field">
+        <input type="text" value="{{ req.address }}" class="zan-cell__bd zan-field__input" placeholder="请输入详细地址" @input="handleInput('address')" />
+        <view class="zan-field__ft">
+          <view class="zan-btn zan-btn--text zan-btn--mini"><view class="icon icon-location gray-dark"></view></view>
+        </view>
+      </view>
+
+      <navigator class="zan-cell zan-cell--access" url="apply-search">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>调解机构：</view>
+        <view class="zan-cell__bd">
+          <view wx:if="{{ !!orgName }}">{{ orgName }}</view>
+          <view wx:else class="gray-dark">请选择</view>
+        </view>
+        <view class="zan-cell__ft"></view>
+      </navigator>
+
+      <view class="zan-panel__title"><text class="text-orange">*</text>纠纷描述：</view>
+      <view class="zan-cell zan-field">
+        <textarea
+          value="{{ req.remarks }}"
+          disabled="{{ pickerShow }}"
+          class="zan-cell__bd zan-field__input"
+          style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          placeholder-style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          @input="handleInput('remarks')"
+        ></textarea>
+      </view>
+
+      <view class="zan-panel__title"><text class="text-orange">*</text>您的诉求：</view>
+      <view class="zan-cell zan-field">
+        <textarea
+          value="{{ req.appeal }}"
+          disabled="{{ pickerShow }}"
+          class="zan-cell__bd zan-field__input"
+          style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          placeholder-style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          @input="handleInput('appeal')"
+        ></textarea>
+      </view>
+    </view>
+
+    <view class="zan-btns zan-row">
+      <view class="zan-col zan-col-16 zan-col-offset-4">
+        <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="handleSubmit">下一步</button>
+      </view>
+    </view>
+  </view>
+
+  <address-picker
+    title="纠纷发生地"
+    :show.sync="pickerShow"
+    :isDispute="isDispute"
+    @change.user="handlePickerChange"
+  ></address-picker>
+</template>
+
+<script>
+import wepy from 'wepy'
+import ZanEvent from '@/utils/event'
+import validate from '@/utils/validate'
+import StoreFactory from '@/utils/store'
+import {getUserInfo} from '@/utils/utils'
+import {submitMediate} from '@/api/mediate'
+import AddressPicker from '@/components/address-picker'
+import {getOrgTypeData, getDisputeTypes} from '@/api/common'
+
+const store = StoreFactory.getStore('mediateApply')
+
+// 将event对象添加到缓存
+store.set('mediateEvent', ZanEvent)
+
+// 用于与保存选择的调解机构
+let orgItem
+
+// 监听选择调解机构事件
+ZanEvent.on('onOrgChange', (item = {}) => {
+  orgItem = item
+})
+
+export default class MediateApplyStep2 extends wepy.page {
+  config = {
+    navigationBarTitleText: '新建纠纷'
+  }
+
+  components = {
+    'address-picker': AddressPicker
+  }
+
+  data = {
+    types: [],
+    typeId: '',
+    typeName: '',
+    orgColumn: [],
+    orgName: '',
+    isDispute: true,
+    pickerShow: false,
+    addressName: '',
+    req: {
+      typeId: '',
+      typeCode: '',
+      areaCode: '',
+      address: '',
+      orgId: '',
+      remarks: '',
+      appeal: ''
+    },
+    userInfo: null,
+    loading: false,
+    cachable: true
+  }
+
+  methods = {
+    onTypeChange({detail}) {
+      const item = this.types[detail.value] || {}
+
+      const {id, name, code} = item
+
+      this.req.typeId = id
+      this.req.typeCode = code
+      this.typeName = name
+
+      this.loadOrgData()
+    },
+    showPicker() {
+      this.pickerShow = true
+    },
+    handlePickerChange(list = []) {
+      // console.error(list)
+      this.addressName = list.map(({name}) => name).join('')
+
+      const item = list.pop()
+
+      this.req.areaCode = item ? item.code : ''
+
+      this.loadOrgData()
+    },
+    handleInput(field, {detail}) {
+      this.req[field] = detail.value
+    },
+    handleSubmit() {
+      this.validate().then(() => {
+        this.loading = true
+        // 提交数据
+        const params = this.getParams()
+        console.log(params)
+        submitMediate(params)
+        .then(({lawCaseId}) => {
+          this.loading = false
+          this.cachable = false
+
+          this.$apply()
+
+          // 清除缓存
+          store.remove('mediateApplyStep1')
+          store.remove('mediateApplyStep2')
+
+          // 将案件id传递到上一个页面
+          ZanEvent.trigger('onSubmit', lawCaseId)
+
+          wx.navigateBack()
+        })
+        .catch(e => {
+          this.loading = false
+
+          this.$apply()
+        })
+      })
+    }
+  }
+
+  watch = {
+    types() {
+      this.setDefaultType()
+    }
+  }
+
+  // 设置默认的纠纷类型
+  setDefaultType() {
+    const item = this.types.find(({id}) => `${id}` === this.typeId)
+
+    if (item) {
+      const {id, code, name} = item
+
+      this.typeName = name
+      this.req.typeId = id
+      this.req.typeCode = code
+
+      this.$apply()
+    }
+  }
+
+  // 校验
+  validate() {
+    return new Promise((resolve, reject) => {
+      const valid = validate({
+        typeCode: '请选择纠纷类型',
+        areaCode: '请选择纠纷发生地',
+        address: '请输入详细地址',
+        orgId: '请选择调解机构',
+        remarks: '请输入纠纷描述',
+        appeal: '请输入您的诉求'
+      }, this.req)
+
+      valid ? resolve(valid) : reject(valid)
+    })
+  }
+
+  // 加载机构数据
+  loadOrgData() {
+    this.req.orgId = ''
+    this.orgName = ''
+    this.orgColumn = []
+
+    this.$apply()
+
+    if (this.req.typeCode && this.req.areaCode) {
+      getOrgTypeData({
+        typeCode: this.req.typeCode,
+        areasCode: this.req.areaCode
+      })
+      .then((data = {}) => {
+        this.req.orgId = data.id
+        this.orgName = data.organizationName
+
+        this.$apply()
+      })
+    }
+  }
+
+  // 获取请求参数
+  getParams() {
+    const params = {}
+    // 第一步填入的信息
+    Object.assign(params, this.getStep1Params())
+
+    const {req = {}} = this
+
+    // 纠纷详情参数
+    return Object.assign(params, {
+      type: {
+        id: req.typeId,
+        code: req.typeCode,
+        name: this.typeName
+      },
+      areasCode: req.areaCode,
+      address: req.address,
+      orgId: req.orgId,
+      remarks: req.remarks,
+      appeal: req.appeal
+    })
+  }
+
+  // 获取第一步填入的信息
+  getStep1Params() {
+    const data = store.get('mediateApplyStep1')
+
+    if (data) {
+      const params = {}
+      const {
+        appliers = [],
+        respondents = []
+      } = data
+
+      // 申请人
+      params.applys = appliers.map((item = {}) => this.parseItem(item))
+
+      // 被申请人
+      params.respondents = respondents.map((item = {}) => this.parseItem(item))
+
+      return params
+    }
+
+    return {}
+  }
+
+  // 转换申请人|被申请人参数
+  parseItem(item = {}) {
+    const {role, orgName, creditCode, name, genderValue, phone, idcard, areaCode, address, agent} = item
+
+    const newItem = {
+      role,
+      phone,
+      address,
+      orgName,
+      actualName: name,
+      idCard: idcard,
+      areasCode: areaCode,
+      procreditCode: creditCode,
+      sex: ['男', '女'][genderValue]
+    }
+
+    const newAgent = this.getAgentParams(agent)
+
+    if (newAgent) {
+      newItem.agent = newAgent
+    }
+
+    return newItem
+  }
+
+  // 获取代理人参数
+  getAgentParams(agent) {
+    if (agent) {
+      const {role, name, genderValue, phone, idcard} = agent
+
+      return {
+        role,
+        phone,
+        idCard: idcard,
+        actualName: name,
+        sex: ['男', '女'][genderValue]
+      }
+    }
+
+    return null
+  }
+
+  onShow() {
+    // 选择了调解机构后更新UI，后台不会更新UI，必须页面显示才能更新
+    if (orgItem) {
+      this.req.orgId = orgItem.id
+      this.orgName = orgItem.organizationName
+
+      this.$apply()
+
+      // 清空缓存的数据，释放资源，利于内存回收
+      orgItem = null
+    }
+
+    if (this.types.length === 0) {
+      getDisputeTypes()
+      .then(({types = []} = {}) => {
+        this.types = types
+
+        this.$apply()
+      })
+    }
+  }
+
+  writeCache() {
+    const keys = ['typeName', 'orgName', 'addressName', 'req']
+    const data = {}
+
+    keys.map(key => data[key] = this[key])
+
+    store.set('mediateApplyStep2', data)
+  }
+
+  readCache() {
+    const data = store.get('mediateApplyStep2')
+
+    if (data) {
+      const keys = ['typeName', 'orgName', 'addressName', 'req']
+
+      keys.map(key => this[key] = data[key])
+
+      this.$apply()
+    }
+  }
+
+  onLoad({typeid}) {
+    this.typeId = typeid
+
+    this.userInfo = getUserInfo()
+    if (this.userInfo) {
+      const {areasCode, lname, nation} = this.userInfo
+
+      if (/^(53)/.test(areasCode)) {
+        this.addressName = lname
+        this.req.areaCode = areasCode
+        this.req.address = nation
+      }
+    }
+
+    this.$apply()
+
+    this.readCache()
+  }
+
+  onUnload() {
+    this.cachable && this.writeCache()
+  }
+}
+</script>
+
+<style lang="scss">
+.zan-field__title {
+  width: 120px;
+}
+</style>

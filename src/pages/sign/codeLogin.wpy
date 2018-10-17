@@ -1,0 +1,137 @@
+<template>
+  <view class="container {{fexid?'fexid':''}}">
+    <view style="padding: 0 30px">
+
+      <view class="content-padded">
+
+        <view class="zan-hairline--bottom" style="margin-top: 100px;">
+          <view class="zan-cell zan-field" style="border:1px solid #e0e0e0;">
+            <!--<view class="zan-cell__icon icon icon-phone zan-font-20"></view>-->
+            <input  class="zan-field__input zan-cell__bd name"  placeholder="请输入邀请码" value="{{code}}" maxlength="11" type="number" @input="userInput('code')" />
+          </view>
+        </view>
+
+
+      </view>
+
+      <view class="content-padded">
+        <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="submit">进入视频</button>
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {codeSignin} from '@/api/sign' // 引入登录接口
+  import {validate} from '@/utils/validate' // 用户输入表单的验证
+  export default class SignIn extends wepy.page {
+    config = {
+      navigationBarTitleText: '邀请码进入视频'
+    }
+
+    data = {
+      code: '',
+      goBack: false,
+      loading: false,
+      isAndroid: false,
+      fexid: false,
+      status: null,
+      flag: false,
+    }
+    // 用户输入表单验证
+    validate() {
+      return validate({code: '请输入邀请码'}, this)
+    }
+    onLoad({back}) {
+      this.goBack = !!back
+      try {
+        let res = wx.getSystemInfoSync()
+        let sys = res.system.indexOf('Android')
+        if (sys > -1) {
+          this.isAndroid = true
+          this.$apply()
+        }
+      } catch (e) {
+        // Do something when catch error
+      }
+      this.$apply()
+    }
+    onShow() {
+      if (this.flag === true) {
+        wx.reLaunch({
+          url: '/pages/home/home'
+        })
+      }
+    }
+    methods = {
+      handleFocus() {
+        if (this.isAndroid) {
+          this.fexid = true
+          this.$apply()
+        }
+      },
+      handleBlur() {
+        this.fexid = false
+        this.$apply()
+      },
+      // 用户输入
+      userInput(field, {detail}) {
+        this[field] = detail.value
+        this.$apply()
+      },
+      submit() {
+        if (this.validate()) {
+          // let self = this
+          this.loading = true
+          console.log(this.code)
+          codeSignin({
+            code: this.code
+          })
+            .then((data) => {
+              this.loading = false
+              this.flag = true
+              let params = `caseid=${data.lawCaseId}&meetingid=${data.meetingId}&userid=${data.pesonnelId}&role=${data.role}`
+              wx.navigateTo({url: `/pages/mediate/live?${params}`})
+              this.$apply()
+            })
+            .catch(() => {
+              this.loading = false
+              this.$apply()
+            })
+        }
+      }
+    }
+  }
+
+</script>
+
+<style lang="scss">
+page{
+  width: 100vm;
+}
+  .logo {
+    width: 460rpx;
+    height: 230rpx;
+    margin: 100rpx auto 60rpx;
+    display: block;
+  }
+.fexid{
+  position: absolute;
+  top: -100px;
+  width: 100%;
+}
+  .zan-field {
+    padding: 8px 10px;
+  }
+
+  .zan-field__input {
+    padding: 3px 0;
+    min-height: 22px;
+    height: auto;
+  }
+  .zan-font-20{
+    font-size: 36rpx;
+  }
+</style>

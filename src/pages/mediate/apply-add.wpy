@@ -1,0 +1,410 @@
+<template>
+  <view class="container" style="{{ pickerShow ? 'height:100vh;overflow:hidden;pointer-events: none;' : '' }}">
+    <view class="zan-panel__title">
+      <view wx:if="{{ type == '1' }}" class="section-title text-default" style="margin-bottom:0">被申请方(必填)</view>
+      <view wx:else class="section-title text-default" style="margin-bottom:0">申请方(必填)</view>
+    </view>
+    <view class="zan-panel">
+      <picker value="{{ typeIndex }}" range="{{ types }}" range-key="name" @change="handleInput('typeIndex')">
+        <view class="zan-cell zan-field zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>类型：</view>
+          <view class="zan-cell__bd zan-field__input">{{ types[typeIndex].name }}</view>
+          <view class="zan-cell__ft"></view>
+        </view>
+        <view></view>
+      </picker>
+
+      <block wx:if="{{ typeIndex > 0 }}">
+        <view class="zan-cell zan-field">
+          <view wx:if="{{ type == '0' }}" class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>申请人：</view>
+          <view wx:else class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>被申请人：</view>
+          <input type="text" value="{{ orgName }}" class="zan-cell__bd zan-field__input" placeholder="请输入单位名称" @input="handleInput('orgName')" />
+        </view>
+        <view class="zan-cell zan-field">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ typeIndex == 1 && type != '1'}}">*</text>社会信用代码：</view>
+          <input type="text" value="{{ creditCode }}" class="zan-cell__bd zan-field__input" placeholder="请输入统一社会信用代码" @input="handleInput('creditCode')" maxlength="18" />
+        </view>
+      </block>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>{{ nameLabel }}：</view>
+        <input type="text" value="{{ name }}" class="zan-cell__bd zan-field__input" placeholder="请输入姓名" disabled="{{ current }}" @input="handleInput('name')" />
+      </view>
+
+      <picker range="{{ genderItems }}" disabled="{{ current && genderName }}" @change="handleInput('genderValue')">
+        <view class="zan-cell zan-field zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ typeIndex == 0 }}">*</text>性别：</view>
+          <view class="zan-cell__bd zan-field__input">
+            <view wx:if="{{ genderName }}">{{ genderName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+        <view></view>
+      </picker>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>联系电话：</view>
+        <input type="number" value="{{ phone }}" maxlength="11" class="zan-cell__bd zan-field__input" disabled="{{ current }}" placeholder="请输入电话" @input="handleInput('phone')" />
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ type == '0' }}">{{ types[typeIndex].name ==='自然人' ? '*' : ''}}</text>身份证：</view>
+        <input type="idcard" value="{{ idcard }}" maxlength="18" class="zan-cell__bd zan-field__input" placeholder="请输入身份证号" disabled="{{ current }}" @input="handleInput('idcard')" />
+      </view>
+
+      <view class="zan-cell zan-cell--access">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ !(type == '1' && typeIndex == 0) }}">*</text>{{ addressLabel }}：</view>
+        <view class="zan-cell__bd" @tap="showPicker">
+          <view wx:if="{{ !!addressName }}">{{ addressName }}</view>
+          <view wx:else class="gray-dark">请选择</view>
+        </view>
+        <view class="zan-cell__ft"></view>
+      </view>
+
+      <view class="zan-cell zan-field">
+        <input type="text" value="{{ address }}" class="zan-cell__bd zan-field__input" placeholder="请输入详细地址" @input="handleInput('address')" />
+        <view class="zan-field__ft">
+          <view class="zan-btn zan-btn--text zan-btn--mini"><view class="icon icon-location gray-dark"></view></view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{ agent }}">
+      <view class="zan-panel no-bd--btm">
+        <view class="zan-cell" style="padding:5px 5px 5px 15px;">
+          <view class="zan-cell__bd">代理人</view>
+          <view class="zan-btn zan-btn--primary zan-btn--small zan-btn--text" @tap="removeAgent">删除</view>
+        </view>
+      </view>
+      <view class="zan-panel no-mg">
+        <view class="zan-cell zan-field">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ type == '0' }}">*</text>代理人：</view>
+          <input type="text" value="{{ agent.name }}" class="zan-cell__bd zan-field__input" placeholder="请输入姓名" disabled="{{ agent && agent.current }}" @input="handleAgentInput('name')" />
+        </view>
+
+        <picker range="{{ genderItems }}" disabled="{{ agent && agent.current }}" @change="handleAgentInput('genderValue')">
+          <view class="zan-cell zan-field zan-cell--access">
+            <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ type == '0' }}">*</text>性别：</view>
+            <view class="zan-cell__bd zan-field__input">
+              <view wx:if="{{ agent.genderName }}">{{ agent.genderName }}</view>
+              <view wx:else class="gray-dark">请选择</view>
+            </view>
+            <view class="zan-cell__ft"></view>
+          </view>
+          <view></view>
+        </picker>
+
+        <view class="zan-cell zan-field">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>联系电话：</view>
+          <input type="number" value="{{ agent.phone }}" maxlength="11" class="zan-cell__bd zan-field__input" placeholder="请输入电话" disabled="{{ agent && agent.current }}" @input="handleAgentInput('phone')" />
+        </view>
+
+        <view class="zan-cell zan-field">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ type == '0' }}">*</text>身份证：</view>
+          <input type="idcard" value="{{ agent.idcard }}" maxlength="18" class="zan-cell__bd zan-field__input" placeholder="请输入身份证号" disabled="{{ agent && agent.current }}" @input="handleAgentInput('idcard')" />
+        </view>
+      </view>
+    </view>
+
+    <view class="zan-panel" wx:else>
+      <view class="zan-cell" @tap="appendAgent" hover-class="button-hover">
+        <view class="zan-cell__bd zan-center">添加代理人</view>
+      </view>
+    </view>
+
+    <view class="zan-btns zan-row">
+      <view class="zan-col zan-col-16 zan-col-offset-4">
+        <button class="zan-btn zan-btn--primary" @tap="handleSubmit">下一步</button>
+      </view>
+    </view>
+  </view>
+
+  <address-picker :show.sync="pickerShow" :title.sync="title" @change.user="handlePickerChange"></address-picker>
+</template>
+
+<script>
+import wepy from 'wepy'
+import StoreFactory from '@/utils/store'
+import {validate, patterns} from '@/utils/validate'
+import AddressPicker from '@/components/address-picker'
+import {getUserInfo} from '@/utils/utils'
+
+// 创建缓存对象
+const store = StoreFactory.getStore('mediateApply')
+
+const CACHED_KEYS = [
+  'typeIndex', 'orgName', 'creditCode', 'current',
+  'name', 'genderValue', 'phone', 'idcard',
+  'areaCode', 'addressName', 'address', 'agent'
+]
+
+const typeList = [
+  [
+    {name: '自然人', value: 10},
+    {name: '法人', value: 12},
+    {name: '非法人组织', value: 13}
+  ],
+  [
+    {name: '自然人', value: 20},
+    {name: '法人', value: 22},
+    {name: '非法人组织', value: 23}
+  ]
+]
+
+export default class MediateApplyAdd extends wepy.page {
+  config = {}
+
+  components = {
+    'address-picker': AddressPicker
+  }
+
+  data = {
+    genderItems: ['男', '女'],
+    pickerShow: false,
+    agent: null,
+    typeIndex: 0,
+    orgName: '',
+    creditCode: '',
+    name: '',
+    genderValue: '',
+    genderName: '',
+    phone: '',
+    idcard: '',
+    areaCode: '',
+    addressName: '',
+    address: '',
+    type: '0',
+    current: false,
+    userInfo: null,
+  }
+
+  computed = {
+    types() {
+      return typeList[this.type]
+    },
+    nameLabel() {
+      return [`${['', '被'][this.type]}申请人`, '法定代表人', '机构代表人'][this.typeIndex]
+    },
+    addressLabel() {
+      return ['常住地址', '单位地址', '单位地址'][this.typeIndex]
+    },
+    areaRequired() {},
+    addressRequired() {}
+  }
+
+  methods = {
+    showPicker() {
+      this.pickerShow = true
+    },
+    handleInput(field, {detail}) {
+      this[field] = detail.value
+
+      if (field === 'typeIndex') {
+        this[field] = detail.value - 0
+        this.role = this.types[detail.value].value
+      }
+
+      if (field === 'genderValue') {
+        this.genderName = this.genderItems[detail.value]
+      }
+
+      this.$apply()
+    },
+    handleAgentInput(field, {detail}) {
+
+      this.agent[field] = detail.value
+
+      if (field === 'genderValue') {
+        this.agent.genderName = this.genderItems[detail.value]
+      }
+
+      this.$apply()
+    },
+    handlePickerChange(list) {
+      this.addressName = list.map(({name}) => name).join('')
+
+      const item = list.pop()
+
+      this.areaCode = item.code
+    },
+    appendAgent() {
+      this.agent = {
+        name: '',
+        genderValue: '',
+        genderName: '',
+        phone: '',
+        idcard: ''
+      }
+
+      this.$apply()
+    },
+    removeAgent() {
+      wx.showModal({
+        title: '删除代理人',
+        content: '您确定要删除代理人吗？',
+        success: ({confirm}) => {
+          if (confirm) {
+            this.agent = null
+
+            this.$apply()
+          }
+        }
+      })
+    },
+    handleSubmit() {
+      this.validate()
+      .then(() => {
+        const data = {}
+
+        CACHED_KEYS.map(key => {
+          data[key] = this[key]
+        })
+
+        data.role = this.types[this.typeIndex].value
+
+        if (data.agent) {
+          data.agent.role = [40, 46][this.type]
+        }
+
+        const event = store.get('mediateEvent')
+        event && event.trigger('onApplyAdd', {...data})
+        wx.navigateBack()
+      })
+    }
+  }
+
+  validate() {
+    return new Promise((resolve, reject) => {
+      let valid
+
+      // 单位校验
+      if (this.typeIndex > 0) {
+        valid = validate({
+          orgName: '请输入单位名称',
+          creditCode: {
+            // 法人必填
+            required: this.typeIndex === 1 && this.type !== '1',
+            message: '请输入统一社会信用代码',
+            patterns: [{
+              pattern: /^[a-zA-Z0-9]+$/,
+              message: '请输入有效的统一社会信用代码'
+            }]
+          }
+        }, this)
+
+        if (!valid) {
+          return reject(valid)
+        }
+      }
+
+      valid = validate({
+        name: `请输入${this.nameLabel}姓名`,
+        genderValue: {
+          // 自然人必填
+          required: this.typeIndex === 0,
+          message: '请选择性别'
+        },
+        phone: {
+          required: '请输入联系电话',
+          pattern: patterns.phone,
+          message: '请输入正确的电话'
+        },
+        idcard: {
+          // 自然人必填
+          required: this.typeIndex === 0 && this.type === '0',
+          message: '请输入身份证号',
+          patterns: [{
+            pattern: patterns.idcard,
+            message: '请输入正确的身份证号'
+          }]
+        },
+        areaCode: {
+          // 被申请方自然人选填
+          required: !(this.type === '1' && this.typeIndex === 0),
+          message: `请选择${this.addressLabel}`
+        },
+        address: {
+          // 被申请方自然人选填
+          required: !(this.type === '1' && this.typeIndex === 0),
+          message: '请输入详细地址'
+        },
+        creditCode: {
+          // 验证统一社会信用代码不能超过十八位
+          message: '统一社会信用代码不超过十八位'
+        }
+      }, this)
+
+      if (!valid) {
+        return reject(valid)
+      }
+
+      if (this.agent) {
+        // 代理人校验
+        valid = validate({
+          name: {
+            // 申请人代理人必填
+            required: this.type === '0',
+            message: '请输入代理人姓名'
+          },
+          genderValue: {
+            // 申请人代理人必填
+            required: this.type === '0',
+            message: '请选择代理人性别'
+          },
+          phone: {
+            required: '请输入代理人电话',
+            pattern: patterns.phone,
+            message: '请输入正确的代理人电话'
+          },
+          idcard: {
+            // 申请人代理人必填
+            required: this.type === '0',
+            message: '请输入代理人身份证号',
+            patterns: [{
+              pattern: patterns.idcard,
+              message: '请输入正确的代理人身份证号'
+            }]
+          }
+        }, this.agent)
+      }
+
+      valid ? resolve(valid) : reject(valid)
+    })
+  }
+
+  onLoad({type, data}) {
+    this.type = type
+    this.userInfo = getUserInfo()
+    this.address = this.userInfo.address
+    if (data) {
+      wx.setNavigationBarTitle({title: '编辑当事人信息'})
+
+      const item = JSON.parse(decodeURIComponent(data))
+      item.address = this.userInfo.address
+
+      CACHED_KEYS.map(key => {
+        this[key] = item[key]
+      })
+
+      if (typeof this.genderValue !== 'undefined' && this.genderValue !== null) {
+        this.genderName = this.genderItems[this.genderValue]
+      }
+
+      if (this.agent && this.agent.genderValue) {
+        this.agent.genderName = this.genderItems[this.agent.genderValue]
+      }
+    } else {
+      wx.setNavigationBarTitle({title: '添加当事人信息'})
+    }
+
+    this.$apply()
+  }
+}
+</script>
+
+<style lang="scss">
+.zan-field__title {
+  min-width: 100px;
+}
+</style>

@@ -1,0 +1,180 @@
+<template>
+  <view class="container">
+    <zan-tab componentId="tab" :tab.sync="tab" @zanTabChange.user="zanTabChange"></zan-tab>
+    <tab-content :tab.sync="tab">
+      <view class="tab-pane {{ tab.selectedId === 'tab1' ? 'active' : '' }}">
+
+        <block wx:for="{{Alist}}" wx:key="id" wx:for-index="idx">
+              <view class="zan-cell" @tap="parnInfo('A',{{idx}},{{item.role}} )">
+                <view class="zan-cell__icon icon icon-shenqingren"></view>
+                <view class="zan-cell__bd">
+                  <view>申请人({{item.rolewz}})</view>
+                  <text class="text-gray" wx:if="{{item.role === 10}}">申请人:{{ item.actualName }}</text>
+                  <text class="text-gray" wx:else>申请人:{{ item.orgName }}</text>
+            </view>
+            <view class="zan-cell__desc">手机号:{{ item.phone }}</view>
+          </view>
+
+          <view class="zan-cell" wx:if="{{item.agent }}"  @tap="parnInfo('A',{{idx}},{{item.role}})">
+            <view class="zan-cell__icon icon icon-shenqingren"></view>
+            <view class="zan-cell__bd">
+              <view>代理人(自然人)</view>
+              <text class="text-gray">代理人:{{ item.agent.actualName ? item.agent.actualName : ''}}</text>
+            </view>
+            <view class="zan-cell__desc">手机号:{{ item.agent.phone }}</view>
+          </view>
+        </block>
+
+      </view>
+
+      <view class="tab-pane {{ tab.selectedId === 'tab2' ? 'active' : '' }}">
+
+        <block wx:for="{{ Rlist }}" wx:key="id" wx:for-index="idx">
+          <view class="zan-cell"  @tap="parnInfo('R',{{idx}},{{item.role}})">
+            <view class="zan-cell__icon icon icon-shenqingren"></view>
+            <view class="zan-cell__bd">
+              <view>被申请人({{ item.rolewz }})</view>
+              <text class="text-gray" wx:if="{{item.role === 20}}">被申请人:{{ item.actualName }}</text>
+
+              <text class="text-gray" wx:else>被申请人:{{ item.orgName }}</text>
+            </view>
+            <view class="zan-cell__desc">手机号:{{ item.phone }}</view>
+          </view>
+
+          <view class="zan-cell" wx:if="{{ item.agent }}" @tap="parnInfo('R',{{idx}},{{item.role}})">
+            <view class="zan-cell__icon icon icon-shenqingren"></view>
+            <view class="zan-cell__bd">
+              <view>代理人(自然人)</view>
+              <text class="text-gray">代理人:{{ item.agent.actualName ? item.agent.actualName : '' }}</text>
+            </view>
+            <view class="zan-cell__desc">手机号:{{ item.agent.phone }}</view>
+          </view>
+        </block>
+
+      </view>
+    </tab-content>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import ZanTab from '@/components/zan-tab'
+  import TabContent from '@/components/tab-content'
+  import {getUser} from '@/api/user'
+  import {setItem} from '@/utils/storage'
+  const tabOptisons = {
+    list: [
+      {id: 'tab1', title: '申请人'},
+      {id: 'tab2', title: '被申请人'},
+    ],
+    fixed: true,
+    selectedId: 'tab1'
+  }
+  export default class Party extends wepy.page {
+    config = {
+      navigationBarTitleText: '当事人'
+    }
+    components={
+      'zan-tab': ZanTab,
+      'tab-content': TabContent,
+    }
+    data={
+      caseid: '',
+      Alist: [],
+      Rlist: [],
+      tab: {...tabOptisons},
+      Ractive: true
+    }
+    onLoad({caseid}) {
+      this.caseid = caseid
+      getUser({
+        lawCaseId: this.caseid,
+        type: 'A'
+      }).then((data = {}) => {
+        setItem('Alist', data)
+        let list = data || []
+
+        list = list.map((item = {}) => {
+          if (item.role === 10) {
+            item.rolewz = '自然人'
+          }
+          if (item.role === 12) {
+            item.rolewz = '法人'
+          }
+          if (item.role === 13) {
+            item.rolewz = '非法人组织'
+          }
+          return item
+        })
+        this.Alist = list
+        this.$apply()
+      })
+    }
+    methods={
+      parnInfo(type, index, role) {
+        // console.log(type,index)
+        wx.navigateTo({
+          url: `party-info?type=${type}&index=${index}&role=${role}`
+        })
+      },
+      zanTabChange(id) {
+        this.tab.selectedId = id
+        if (id === 'tab2' && this.Ractive) {
+          getUser({
+            lawCaseId: this.caseid,
+            type: 'R'
+          }).then((data = {}) => {
+            setItem('Rlist', data)
+
+            let list = data || []
+
+            list = list.map((item = {}) => {
+              if (item.role === 20) {
+                item.rolewz = '自然人'
+              }
+              if (item.role === 22) {
+                item.rolewz = '法人'
+              }
+              if (item.role === 23) {
+                item.rolewz = '非法人组织'
+              }
+              return item
+            })
+            this.Rlist = list
+            this.Ractive = false
+            this.$apply()
+          })
+        }
+        this.$apply()
+      },
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    background-color: $gray-f8;
+    padding-bottom: 45px;
+  }
+  .zan-cell{
+    margin-top:20rpx;
+    padding: 40rpx 20rpx;
+    background-color: $white;
+    .icon{
+      width: 80rpx;
+      height: 80rpx;
+      background-color:$gray;
+      border-radius: 50%;
+      color: $white;
+      font-size: 60rpx;
+      text-align: center;
+      line-height: 80rpx;
+      margin-right: 20rpx;
+    }
+    .zan-cell__desc{
+      font-size: 28rpx;
+      align-self:  flex-end;
+    }
+  }
+</style>

@@ -1,0 +1,262 @@
+<template>
+  <search-bar
+    class="fixed-bar--header"
+    @focus.user="handleFocus"
+    @input.user="handleInput"
+    @cancel.user="handleCancel"
+    @confirm.user="handleConfirm"
+  ></search-bar>
+  <view class="scroll-wrapper">
+    <block wx:if="{{ showResult }}">
+      <scroll-view wx:if="{{ result.length }}" scroll-y style="height:100%;">
+        <view class="zan-panel no-bd no-mg">
+          <view class="zan-cell" wx:for="{{ result }}" wx:key="id" @tap="handleClick({{ item }})">
+            <view class="zan-cell__bd">{{ item.organizationName }}</view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view wx:else class="nodata-view">
+        <view class="nodata-view__icon" wx:if="{{ !!keywords }}"><view class="icon icon-tijianbaogaochaxun"></view></view>
+        <view class="nodata-view__label">
+          <view wx:if="{{ !!keywords }}">未搜索到结果</view>
+          <view wx:else>请输入您想搜索的调解机构名称</view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:else class="segment-view">
+      <view class="segment-view__left">
+        <scroll-view scroll-y style="height: 100%;">
+          <view class="control-list">
+            <view
+              wx:for="{{ list }}"
+              wx:key="index"
+              @tap="handleControl({{ index }})"
+              class="zan-cell control-list__item {{ index === currentIndex ? 'control-list__item--active' : '' }}"
+            >
+              <view class="zan-cell__bd">{{ item.orgTypeName }}</view>
+            </view>
+            <view></view>
+          </view>
+        </scroll-view>
+      </view>
+      <view class="segment-view__right">
+        <scroll-view scroll-y style="height: 100%;">
+          <view class="zan-panel no-mg content-list">
+            <view wx:for="{{ subList }}" wx:key="id" class="zan-cell content-list__item" @tap="handleClick({{ item }})">
+              <view class="zan-cell__bd">{{ item.organizationName }}</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {debounce} from '@/utils/utils'
+import StoreFactory from '@/utils/store'
+import {getDefaultOrgData} from '@/api/common'
+import SearchBar from '@/components/search-bar'
+
+// 获取缓存对象
+const store = StoreFactory.getStore('mediateApply')
+
+export default class ApplySearch extends wepy.page {
+  config = {
+    disableScroll: true,
+    navigationBarTitleText: '调解机构'
+  }
+
+  components = {
+    'search-bar': SearchBar
+  }
+
+  data = {
+    showResult: false,
+    keywords: '',
+    currentIndex: 0,
+    list: [],
+    result: []
+  }
+
+  computed = {
+    subList() {
+      let list = []
+
+      const item = this.list[this.currentIndex]
+
+      list = item ? item.list : []
+
+      return list
+    },
+    sources() {
+      return this.list.reduce((prev = [], curr = {}) => {
+        return prev.concat(curr.list || [])
+      }, [])
+    }
+  }
+
+  methods = {
+    handleFocus(e) {
+      this.showResult = true
+    },
+    // handleBlur(e) {
+    //   this.showResult = false
+    // },
+    handleInput(e) {
+      this.keywords = e.detail.value
+    },
+    // 点击取消
+    handleCancel() {
+      this.showResult = false
+      this.keywords = ''
+
+      this.$apply()
+
+      this.$broadcast('setValue', '')
+    },
+    // 键盘搜索按钮点击执行
+    handleConfirm(e) {
+      this.debounceSearch()
+    },
+    handleControl(index) {
+      this.currentIndex = index
+
+      this.$apply()
+    },
+    // 点击结果列表中一项
+    handleClick(item) {
+      if (item.camNum != null) {
+        console.log(item.camNum)
+        // 从缓存对象中拿到事件对象
+        const event = store.get('mediateEvent')
+        // 触发事件
+        event && event.trigger('onOrgChange', item)
+        setTimeout(() => wx.navigateBack(), 300)
+      } else {
+        wx.showToast({
+          title: '您选择的机构暂无对应调解员，请更换其他调解机构',
+          icon: 'none',
+          duration: 2000
+        })
+        return false
+      }
+    }
+  }
+
+  watch = {
+    // 当用户输入的关键字变化的时候，进行检索，这里通过延迟避免重复检索
+    keywords(val) {
+      this.debounceSearch()
+    }
+  }
+
+  // 检索防抖处理
+  debounceSearch() {
+    if (!this._debounceFn) {
+      const fn = debounce(this.doFilter, 300)
+      this._debounceFn = fn.bind(this)
+    }
+
+    this._debounceFn()
+  }
+
+  // 检索
+  doFilter() {
+    // 正在搜索
+    if (this.showResult) {
+      if (this.keywords) {
+        // 输入了关键字，进行检索
+        let reg = new RegExp(this.keywords)
+
+        this.result = this.sources.filter(({organizationName = ''}) => reg.test(organizationName))
+      } else {
+        // 没有输入关键字，展示所有
+        this.result = this.sources.slice()
+      }
+    } else {
+      // 取消搜索，清空
+      this.result = []
+    }
+
+    this.$apply()
+  }
+
+  onShow() {
+    if (!this.list || !this.list.length) {
+      wx.showLoading()
+      getDefaultOrgData()
+      .then((list = []) => {
+        wx.hideLoading()
+        this.list = list
+
+        this.$apply()
+      })
+      .catch(e => wx.hideLoading())
+    }
+  }
+
+  onLoad() {
+    // 加载数据
+    let list = store.get('defaultOrgList')
+
+    if (list && list.length) {
+      this.list = list
+
+      this.$apply()
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables';
+
+.segment-view {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+.segment-view__left,
+.segment-view__right {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+.segment-view__left {
+  min-width: 100px;
+  background-color: lighten($gray-light, 3%);
+}
+.segment-view__right {
+  flex: 1;
+}
+.control-list__item {
+  position: relative;
+  padding: 10px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 2;
+}
+.control-list__item--active {
+  color: $primary-color;
+  background-color: $white;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background-color: $primary-color;
+  }
+
+  &::after {
+    border-color: $white;
+  }
+}
+</style>

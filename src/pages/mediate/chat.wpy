@@ -1,0 +1,331 @@
+<template>
+  <view class="msg-list">
+    <zan-loadmore wx:if="{{ loading }}" :loading.sync="loading"></zan-loadmore>
+    <view wx:for="{{ list}}" wx:key="" class="msg-item {{ item.isSelf ? 'msg-item--right' : '' }}">
+      <view class="msg-item__icon">
+        <image src="{{ item.avatar }}" mode="aspectFill" lazy-load @error="handleError({{ index }})"></image>
+      </view>
+      <view class="msg-item__content">
+        <view class="msg-item__label">
+          <text class="gray-darker">{{ item.actualName }} </text>
+          <text class="text-gray"> {{ item.time }}</text>
+        </view>
+        <view class="msg-item__text"><text>{{ item.content }}</text></view>
+      </view>
+    </view>
+  </view>
+  <view class="fixed-bar fixed-bar--footer input-bar zan-hairline--top">
+    <input type="text" value="{{ text }}" class="input-bar__input" placeholder="请输入内容" @input="handleInput" confirm-type="send" @confirm="handleSend"/>
+    <button class="zan-btn input-bar__btn zan-btn--primary zan-btn--small" disabled="{{ disabled }}" @tap="handleSend">发送</button>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {HOST} from '@/utils/constants'
+import StoreFactory from '@/utils/store'
+import {dateformat} from '@/utils/utils'
+import ZanLoadmore from '@/components/zan-loadmore'
+import {getPriMsg, getPriHistorymsg, savePriMsg} from '@/api/mediate'
+
+const store = StoreFactory.getStore('liveEvent')
+
+const ZanEvent = store.get('chatEvent')
+
+let chatHandler = null
+ZanEvent && ZanEvent.on('missChat', data => {
+  chatHandler && chatHandler(data)
+})
+
+export default class Chat extends wepy.page {
+  config = {
+    enablePullDownRefresh: true,
+    navigationBarTitleText: '消息'
+  }
+
+  components = {
+    'zan-loadmore': ZanLoadmore
+  }
+
+  data = {
+    text: '',
+    userId: '',
+    prevId: '',
+    sessionId: '',
+    list: [],
+    noMore: false,
+    loading: false,
+    priChatTo: ''
+  }
+
+  computed = {
+    disabled() {
+      return !this.text.trim()
+    }
+  }
+
+  watch = {
+    list(list = []) {
+      if (list.length) {
+        this.$nextTick(() => {
+          wx.createSelectorQuery().select('.msg-list').boundingClientRect(({height}) => {
+            wx.pageScrollTo({scrollTop: height})
+          }).exec()
+        })
+      }
+    }
+  }
+
+  methods = {
+    handleInput({detail}) {
+      this.text = detail.value
+    },
+    handleSend() {
+      if (this.text.trim() && !this.loading) {
+        this.saveMsg(this.text.trim())
+        this.text = ''
+
+        this.$apply()
+      }
+    },
+    handleError(index) {
+      const item = this.list[index]
+
+      if (item) {
+        item.headUrl = '/images/sign/avatar_default.png'
+
+        this.$apply()
+      }
+    }
+  }
+
+  // 获取消息
+  fetchMsg(id) {
+    wx.showNavigationBarLoading()
+    getPriMsg({priChatId: id})
+    .then((data = {}) => {
+      wx.hideNavigationBarLoading()
+
+      this.list.push(this.transformItem(data))
+
+      this.$apply()
+    })
+    .catch(e => wx.hideNavigationBarLoading())
+  }
+
+  // 发送消息
+  saveMsg(m) {
+    console.log(this.userId)
+    console.log(this.sessionId)
+    wx.showNavigationBarLoading()
+    savePriMsg({
+      personnelId: this.userId,
+      lawPriSessionId: this.sessionId,
+      content: m
+    })
+    .then((data = {}) => {
+      wx.hideNavigationBarLoading()
+      ZanEvent.trigger('sendMessage', {
+        lawPriChatId: data.chatId,
+        priChatSession: this.sessionId,
+        priChatTo: this.priChatTo
+      })
+      Object.assign(data, {lawPriChatId: data.chatId})
+      chatHandler(data)
+    })
+    .catch(() => wx.hideNavigationBarLoading())
+  }
+
+  transformItem(item = {}) {
+    const {
+      headUrl = '',
+      createTime
+    } = item
+
+    const personal = item.mediator || item.personnel
+
+    return {
+      ...item,
+      actualName: personal ? personal.actualName : '',
+      time: dateformat(new Date(createTime), 'yyyy-MM-dd hh:mm'),
+      isSelf: personal ? `${personal.id}` === this.userId : false,
+      avatar: headUrl ? `${HOST}${headUrl}` : '/images/sign/avatar_default.png'
+    }
+  }
+
+  // 获取消息列表
+  fetchList(cb) {
+    if (this.noMore || this.loading) return cb && cb()
+    const first = this.list[0]
+    this.loading = true
+    getPriHistorymsg({
+      priChatId: first ? first.id : '',
+      lawPriSessionId: this.sessionId,
+      pagesize: 20
+    })
+    .then((list = []) => {
+      this.loading = false
+      if (list.length) {
+        this.list = list.map(item => this.transformItem(item)).concat(this.list)
+      } else {
+        this.noMore = true
+      }
+      this.$apply()
+
+      cb && cb()
+    })
+    .catch(e => {
+      this.loading = false
+      this.$apply()
+
+      cb && cb()
+    })
+  }
+
+  onPullDownRefresh() {
+    this.fetchList(() => wx.stopPullDownRefresh())
+  }
+
+  onLoad({userid, sessionid, priChatTo}) {
+    this.userId = userid
+    this.sessionId = sessionid
+    this.priChatTo = priChatTo
+
+    chatHandler = ({lawPriChatId}) => {
+      console.log(lawPriChatId)
+      this.fetchMsg(lawPriChatId)
+    }
+
+    this.fetchList()
+  }
+
+  onUnload() {
+    if (chatHandler) {
+      chatHandler = null
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables';
+
+page {
+  padding-bottom: 46px;
+}
+
+.msg-list {
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+}
+
+.msg-item {
+  position: relative;
+  max-width: 80%;
+  display: flex;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+}
+
+.msg-item__icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  font-size: 0;
+  border: 1rpx solid $border-color;
+  border-radius: 50%;
+  overflow: hidden;
+
+  > image {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.msg-item__content {
+  margin-left: 20px;
+}
+
+.msg-item__label {
+  font-size: 12px;
+  margin-bottom: 5px;
+  line-height: 1;
+}
+
+.msg-item__text {
+  position: relative;
+  padding: 5px 10px;
+  background-color: $gray-light;
+  color: $gray-darker;
+  word-break: break-all;
+  white-space: normal;
+  border-radius: 4px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    left: 0;
+    top: 5px;
+    border-style: solid;
+    border-width: 5px 8px;
+    border-color: transparent $gray-light transparent transparent;
+    transform: translate(-100%, 0);
+  }
+}
+
+.msg-item--right {
+  align-self: flex-end;
+
+  .msg-item__icon {
+    order: 2;
+  }
+
+  .msg-item__content {
+    margin-left: 0;
+    margin-right: 20px;
+  }
+
+  .msg-item__label {
+    text-align: right;
+  }
+
+  .msg-item__text::before {
+    left: auto;
+    right: 0;
+    border-color: transparent transparent transparent $gray-light;
+    transform: translate(100%, 0);
+  }
+}
+
+.input-bar {
+  display: flex;
+  flex-direction: row;
+  padding: 6px 12px;
+  box-sizing: border-box;
+  background-color: $white;
+}
+.input-bar__input {
+  flex: 1;
+  height: 34px;
+  min-height: 34px;
+  padding: 3px 10px;
+  line-height: 34px;
+  background-color: $background-color;
+  border: 1rpx solid $border-color;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+.input-bar__btn {
+  height: 34px;
+  min-height: 34px;
+  line-height: 34px;
+  border-radius: 3px;
+}
+.input-bar__input + .input-bar__btn {
+  margin-left: 10px;
+}
+</style>

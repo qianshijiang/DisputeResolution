@@ -1,0 +1,191 @@
+<template>
+  <view class="container">
+    <view class="zan-panel" style="margin-top: 0">
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">新手机号</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入新手机号" maxlength="11" type="number" @input="input('newphone')" />
+        <view class="zan-cell__ft">
+          <button class="zan-btn zan-btn--mini zan-btn--primary zan-font-12" @tap="sendmessg" disabled="{{disable}}">{{getmsg}}</button>
+        </view>
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">验证码</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入验证码" type="number"  @input="input('yzm')" maxlength="4" />
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title">原手机号</view>
+        <input class="zan-field__input zan-cell__bd" placeholder="请输入原手机号" type="number" disabled="{{true}}" @input="input('oldphone')" maxlength="11" value="{{oldphone}}" />
+      </view>
+
+    </view>
+    <view class="btnbox">
+      <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="submit">提交</button>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {getUserInfo, saveUserInfo} from '@/utils/utils'
+  import {getVerifyCode, updatePhone, checkUserIsRegister} from '@/api/sign'
+  import {validate, patterns} from '@/utils/validate'
+  export default class ModifyMobile extends wepy.page {
+    config={
+      navigationBarTitleText: '修改绑定手机'
+    }
+    onLoad() {
+      this.userInfo = getUserInfo()
+      this.oldphone = this.userInfo.phone
+      this.$apply()
+    }
+    data={
+      getmsg: '发送验证码',
+      disable: false,
+      oldphone: '',
+      yzm: '',
+      newphone: '',
+      loading: false,
+      userInfo: null
+
+    }
+    methods={
+      input(field, {detail}) {
+        this[field] = detail.value
+      },
+      sendmessg() { // 发送验证码
+        if (this.validate(true)) {
+          wx.showLoading()
+          checkUserIsRegister({
+            oldPhone: this.newphone
+          }).then(() => {
+          }).catch((e = {}) => {
+            if (e.code === '200025') { // 返回 25 是表示  手机号 已经存在
+              wx.hideLoading()
+              wx.showToast({
+                title: e.message,
+                icon: 'none',
+                duration: 2000
+              })
+            } else if (e.code === '200012') { // 返回 12 是表示手机号未注册 然后发送验证码
+              getVerifyCode({
+                oldPhone: this.newphone
+              })
+                .then(() => {
+                  wx.hideLoading()
+                  wx.showToast({title: '短信验证码已发送至您的手机，请注意查收！', icon: 'none'})
+                  this.countdown()
+                })
+                .catch(() => {
+                  wx.hideLoading()
+                })
+            } else {
+              wx.hideLoading()
+            }
+          })
+        }
+      },
+      submit() {
+        if (this.validate()) {
+          this.loading = true
+          this.$apply()
+          updatePhone({
+            oldPhone: this.oldphone,
+            newPhone: this.newphone,
+            verifyCode: this.yzm
+          }).then(() => {
+            this.loading = false
+            this.userInfo.phone = this.newphone
+            this.$apply()
+            saveUserInfo(this.userInfo)
+            wx.showModal({
+              content: '绑定手机修改成功',
+              showCancel: false,
+              success: () => {
+                wx.navigateBack({
+                  delta: 1
+                })
+              }
+            })
+          }).catch(() => {
+            this.loading = false
+            this.$apply()
+          })
+        }
+      }
+    }
+    // 倒计时
+    countdown(t = 60) {
+      if (--t > 0) {
+        this.disable = true
+        this.getmsg = `${t}s后再次发送`
+        setTimeout(() => this.countdown(t), 1000)
+      } else {
+        this.getmsg = '再次获取验证码'
+        this.disable = false
+      }
+      this.$apply()
+    }
+
+    validate(isBreak = false) {
+      let valid = validate({
+        newphone: {
+          required: '请输入新手机号',
+          pattern: patterns.phone,
+          message: '请输入正确的新手机号'
+        }
+      }, this)
+
+      if (isBreak) {
+        return valid
+      }
+      if (valid) {
+        valid = validate({
+          yzm: {
+            required: '请输入验证码',
+          },
+          oldphone: {
+            required: '请输入原手机号',
+            pattern: patterns.phone,
+            message: '请输入正确的原手机号'
+          },
+        }, this)
+      }
+      return valid
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    background-color:$white;
+  }
+  .zan-field {
+    padding: 0 15px;
+  }
+  .zan-field__title {
+    color: #333;
+    min-width: 65px;
+    padding-right: 10px;
+    font-size: 28rpx;
+    font-weight: bold;
+  }
+  .text-right{
+    text-align: right;
+  }
+  .zan-field__input {
+    flex: 1;
+    line-height: 1.6;
+    padding: 10px 0;
+    min-height: 22px;
+    height: auto;
+    font-size: 28rpx;
+  }
+  .btnbox{
+    width: 80%;
+    margin: 25px auto;
+  }
+</style>

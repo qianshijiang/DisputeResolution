@@ -1,0 +1,290 @@
+<template>
+  <view class="container" style="{{ pickerShow ? 'height:100vh;overflow:hidden;pointer-events: none;' : '' }}">
+    <view class="zan-panel__title">
+      <view wx:if="{{ type == '1' }}" class="section-title text-default" style="margin-bottom:0">被申请方(必填)</view>
+      <view wx:else class="section-title text-default" style="margin-bottom:0">申请方(必填)</view>
+    </view>
+    <view class="zan-panel">
+      <picker value="{{ typeIndex }}" range="{{ types }}" range-key="name" @change="handleInput('typeIndex')">
+        <view class="zan-cell zan-field zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>类型：</view>
+          <view class="zan-cell__bd zan-field__input">{{ types[typeIndex].name }}</view>
+          <view class="zan-cell__ft"></view>
+        </view>
+        <view></view>
+      </picker>
+
+      <block wx:if="{{ typeIndex > 0 }}">
+        <view class="zan-cell zan-field">
+          <view wx:if="{{ type == '0' }}" class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>申请人：</view>
+          <view wx:else class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>被申请人：</view>
+          <input type="text" value="{{ orgName }}" class="zan-cell__bd zan-field__input" placeholder="请输入单位名称" @input="handleInput('orgName')" />
+        </view>
+        <view class="zan-cell zan-field">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ typeIndex == 1 }}">*</text>社会信用代码：</view>
+          <input type="text" maxlength='18'  value="{{ creditCode }}" class="zan-cell__bd zan-field__input" placeholder="请输入统一社会信用代码" @input="handleInput('creditCode')" />
+        </view>
+      </block>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>{{ nameLabel }}：</view>
+        <input type="text" value="{{ name }}" class="zan-cell__bd zan-field__input" placeholder="请输入姓名" disabled="{{ current }}" @input="handleInput('name')" />
+      </view>
+
+      <picker range="{{ genderItems }}" disabled="{{ current && genderName }}" @change="handleInput('genderValue')">
+        <view class="zan-cell zan-field zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ typeIndex == 0 }}">*</text>性别：</view>
+          <view class="zan-cell__bd zan-field__input">
+            <view wx:if="{{ genderName }}">{{ genderName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+        <view></view>
+      </picker>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>联系电话：</view>
+        <input type="number" value="{{ phone }}" maxlength="11" class="zan-cell__bd zan-field__input" disabled="{{ current }}" placeholder="请输入电话" @input="handleInput('phone')" />
+      </view>
+
+      <view class="zan-cell zan-field">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ type == '0' }}">{{ types[typeIndex].name ==='自然人' ? '*' : ''}}</text>身份证：</view>
+        <input type="idcard" value="{{ idcard }}" maxlength="18" class="zan-cell__bd zan-field__input" placeholder="请输入身份证号" disabled="{{ current }}" @input="handleInput('idcard')" />
+      </view>
+
+      <view class="zan-cell zan-cell--access">
+        <view class="zan-cell__hd zan-field__title"><text class="text-orange" wx:if="{{ !(type == '1' && typeIndex == 0) }}">*</text>{{ addressLabel }}：</view>
+        <view class="zan-cell__bd" @tap="showPicker">
+          <view wx:if="{{ !!addressName }}">{{ addressName }}</view>
+          <view wx:else class="gray-dark">请选择</view>
+        </view>
+        <view class="zan-cell__ft"></view>
+      </view>
+
+      <view class="zan-cell zan-field">
+        <input type="text" value="{{ address }}" class="zan-cell__bd zan-field__input" placeholder="请输入详细地址" @input="handleInput('address')" />
+        <view class="zan-field__ft">
+          <view class="zan-btn zan-btn--text zan-btn--mini"><view class="icon icon-location gray-dark"></view></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="zan-btns zan-row">
+      <view class="zan-col zan-col-16 zan-col-offset-4">
+        <button class="zan-btn zan-btn--primary" @tap="handleSubmit">下一步</button>
+      </view>
+    </view>
+  </view>
+
+  <address-picker :show.sync="pickerShow" :title.sync="title" @change.user="handlePickerChange"></address-picker>
+</template>
+
+<script>
+import wepy from 'wepy'
+import ZanEvent from '@/utils/event'
+import StoreFactory from '@/utils/store'
+import {validate, patterns} from '@/utils/validate'
+import AddressPicker from '@/components/address-picker'
+import {getUserInfo} from '@/utils/utils'
+
+// 创建缓存对象
+const store = StoreFactory.getStore('assessmentApply')
+
+let caseId = null
+
+// 监听案件提交成功
+ZanEvent.on('onSubmits', id => {
+  caseId = id
+})
+
+const typeList = [
+  [
+    {name: '自然人', value: 10},
+    {name: '法人', value: 12},
+    {name: '非法人组织', value: 13}
+  ]
+]
+
+export default class assessmentApplyAdd extends wepy.page {
+  config = {
+    navigationBarTitleText: '添加当事人信息'
+  }
+
+  components = {
+    'address-picker': AddressPicker
+  }
+
+  data = {
+    genderItems: ['男', '女'],
+    pickerShow: false,
+    typeIndex: 0,
+    orgName: '',
+    creditCode: '',
+    name: '',
+    genderValue: '',
+    genderName: '',
+    phone: '',
+    idcard: '',
+    areaCode: '',
+    addressName: '',
+    address: '',
+    type: '0',
+    current: false,
+    Apply: {
+
+    }
+  }
+  computed = {
+    types() {
+      return typeList[this.type]
+    },
+    nameLabel() {
+      return [`${['', '被'][this.type]}申请人`, '法定代表人', '机构代表人'][this.typeIndex]
+    },
+    addressLabel() {
+      return ['常住地址', '单位地址', '单位地址'][this.typeIndex]
+    }
+  }
+
+  methods = {
+    showPicker() {
+      this.pickerShow = true
+    },
+    handleInput(field, {detail}) {
+      // console.log(detail)
+      this[field] = detail.value
+
+      if (field === 'typeIndex') {
+        this[field] = detail.value - 0
+        if (this.typeIndex === 0) {
+          this.orgName = ''
+          this.creditCode = ''
+        }
+      }
+
+      if (field === 'genderValue') {
+        this.genderName = this.genderItems[detail.value]
+      }
+
+      this.$apply()
+    },
+    handlePickerChange(list) {
+
+      this.addressName = list.map(({name}) => name).join('')
+      console.log(this.addressName)
+
+      const item = list.pop()
+
+      this.areaCode = item.code
+    },
+    handleSubmit() {
+      this.validate()
+      .then(() => {
+        const applicants = {}
+        this.role = this.types[this.typeIndex].value.toString()
+        console.log(this.types[this.typeIndex])
+        console.log(this.role)
+        applicants.actualName = this.name
+        applicants.address = this.address
+        applicants.areasCode = this.areaCode
+        applicants.idCard = this.idcard
+        applicants.orgName = this.orgName
+        applicants.phone = this.phone
+        applicants.procreditCode = this.creditCode
+        applicants.role = this.role
+        applicants.sex = this.genderName
+        applicants.type = this.type
+        applicants.corporation = this.types[this.typeIndex].name
+
+        store.set('mediateEvent', {applicants})
+        wx.navigateTo({url: 'assessment-step'})
+      })
+    }
+  }
+
+  validate() {
+    return new Promise((resolve, reject) => {
+      let valid
+
+      if (this.typeIndex > 0) {
+        valid = validate({
+          orgName: '请输入单位名称',
+          creditCode: {
+            // 法人必填
+            required: this.typeIndex === 1,
+            message: '请输入统一社会信用代码',
+            patterns: [{
+              pattern: /^(?![0-9]+$)(?![A-Z]+$)[0-9A-Z]{18}$/,
+              message: '请输入有效的统一社会信用代码'
+            }]
+          }
+        }, this)
+
+        if (!valid) {
+          return reject(valid)
+        }
+      }
+
+      valid = validate({
+        name: `请输入${this.nameLabel}姓名`,
+        genderValue: {
+          // 自然人必填
+          required: this.typeIndex === 0,
+          message: '请选择性别'
+        },
+        phone: {
+          required: '请输入联系电话',
+          pattern: patterns.phone,
+          message: '请输入正确的电话'
+        },
+        idcard: {
+          // 申请人必填
+          required: this.typeIndex === 0,
+          message: '请输入身份证号',
+          patterns: [{
+            pattern: patterns.idcard,
+            message: '请输入正确的身份证号'
+          }]
+        }
+      }, this)
+
+      if (!valid) {
+        return reject(valid)
+      }
+
+      valid ? resolve(valid) : reject(valid)
+    })
+  }
+
+  onShow() {
+    if (caseId !== null) {
+      // 案件已提交成功，跳转到成功页面
+      wx.redirectTo({url: `/pages/assessment/success?caseid=${caseId}`})
+      caseId = null
+    }
+  }
+
+  onLoad({type, data}) {
+    this.type = type
+    this.$apply()
+
+    this.userInfo = getUserInfo()
+    console.log(this.userInfo)
+    this.name = this.userInfo.actualName
+    this.idcard = this.userInfo.idCard
+    this.phone = this.userInfo.phone
+    this.genderValue = this.userInfo.sex
+    this.genderName = this.userInfo.sex
+    this.address = this.userInfo.nation
+    this.addressName = this.userInfo.lname
+    this.areaCode = this.userInfo.areasCode
+  }
+}
+</script>
+
+<style lang="scss">
+.zan-field__title {
+  min-width: 100px;
+}
+</style>

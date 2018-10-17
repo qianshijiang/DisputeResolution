@@ -1,0 +1,66 @@
+<template>
+  <view class="container content-padded">
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view class="icon icon-duihaocheckmark17"></view>
+    <view class="zan-font-20">评估申请创建成功</view>
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view>温馨提示：请前往我的评估页面查看已提交的申请</view>
+    <view><text>\n</text></view>
+    <view style="width:80%;">
+      <view class="zan-btn zan-btn--primary" hover-class="button-hover" @tap="assessmentApp">申请评估</view>
+      <navigator class="zan-btn zan-btn--primary zan-btn--plain" url="/pages/assessment/assessment-add?type=0" open-type="redirect">创建新的申请评估</navigator>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {H5URL} from '@/utils/constants'
+import {applicationAssessment} from '@/api/user'
+
+export default class AssessmentSuccess extends wepy.page {
+  config = {
+    navigationBarTitleText: '评估申请成功'
+  }
+  data={
+    Id: 0
+  }
+  onLoad({caseid}) {
+    this.Id = caseid
+  }
+  methods = {
+    assessmentApp() {
+      console.log(11111)
+      applicationAssessment({
+        evaluateId: this.Id
+      }).then((data = {}) => {
+        console.log(data)
+        const url = `${H5URL}/nasweb/#/web?key=${data.id.key}&token=${data.id.token}&disputeId=${data.id.disputeId}&mediatorId=${data.id.mediatorId}&createType=${data.id.createType}`
+        wx.redirectTo({
+          url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
+        })
+      })
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  .icon {
+    font-size: 150px;
+    color: #7cc343;
+    line-height: 1;
+  }
+}
+</style>

@@ -1,0 +1,205 @@
+<template>
+  <view class="container" style="{{ pickerShow ? 'height:100vh;overflow:hidden;pointer-events:none;' : '' }}">
+    <view class="zan-panel">
+      <picker range="{{ types }}" range-key="name" @change="onTypeChange">
+        <view class="zan-cell zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text> 纠纷类型：</view>
+          <view class="zan-cell__bd">
+            <view wx:if="{{ !!typeName }}">{{ typeName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+      </picker>
+    </view>
+
+    <view class="zan-panel">
+      <view class="zan-panel__title"><text class="text-orange">*</text> 纠纷描述：</view>
+      <view class="zan-cell zan-field">
+        <textarea
+          class="zan-cell__bd zan-field__input"
+          disabled="{{ pickerShow }}"
+          placeholder="请输入描述"
+          style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          placeholder-style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          @input="handleInput('remarks')"
+        ></textarea>
+      </view>
+    </view>
+
+    <view class="zan-panel">
+      <view class="zan-panel__title"><text class="text-orange">*</text> 您的诉求：</view>
+      <view class="zan-cell zan-field">
+        <textarea
+          class="zan-cell__bd zan-field__input"
+          disabled="{{ pickerShow }}"
+          placeholder="请输入您的诉求"
+          style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          placeholder-style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          @input="handleInput('appeal')"
+        ></textarea>
+      </view>
+    </view>
+
+    <view class="zan-panel">
+      <view class="zan-hairline--bottom">
+        <view class="zan-cell zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>纠纷发生地：</view>
+          <view class="zan-cell__bd" @tap="showPicker">
+            <view wx:if="{{ !!addressName }}">{{ addressName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+      </view>
+    </view>
+
+    <view url="success" class="zan-btns">
+      <button
+        class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}"
+        disabled="{{ loading }}"
+       @tap="handleSubmit"
+      >提交申请</button>
+    </view>
+  </view>
+
+  <address-picker
+    title="纠纷发生地"
+    :show.sync="pickerShow"
+    @change.user="handlePickerChange"
+  ></address-picker>
+</template>
+
+<script>
+import wepy from 'wepy'
+import ZanEvent from '@/utils/event'
+import validate from '@/utils/validate'
+import {getDisputeTypes} from '@/api/common'
+import AddressPicker from '@/components/address-picker'
+import {assessment} from '@/api/home'
+import StoreFactory from '@/utils/store'
+
+const store = StoreFactory.getStore('assessmentApply')
+
+// 将event对象添加到缓存
+store.set('mediateEvent', ZanEvent)
+
+export default class Assessment extends wepy.page {
+  config = {
+    navigationBarTitleText: '创建评估申请'
+  }
+
+  components = {
+    'address-picker': AddressPicker
+  }
+
+  data = {
+    types: [],
+    typeName: '',
+    pickerShow: false,
+    loading: false,
+    address: [],
+    newaddress: '',
+    req: {
+      areasCode: '',
+      type: '',
+      remarks: '',
+      appeal: '',
+      address: ''
+    }
+  }
+
+  computed = {
+    addressName() {
+      return this.address.map(({name}) => name).join('')
+    }
+  }
+
+  methods = {
+    onTypeChange({detail}) {
+      const item = this.types[detail.value]
+
+      this.req.type = item ? item.name : ''
+
+      this.typeName = item ? item.name : ''
+    },
+    handleInput(field, {detail}) {
+      this.req[field] = detail.value
+    },
+    showPicker() {
+      this.pickerShow = true
+    },
+    handlePickerChange(list = []) {
+      this.address = [...list]
+
+      const item = list.pop()
+      this.newaddress = this.address.map(({name}) => name).join('')
+      this.req.areasCode = item ? item.code : ''
+      this.req.address = this.newaddress
+      this.$apply()
+    },
+    // 提交
+    handleSubmit() {
+      // 校验
+      console.log(store)
+      let infoArr = []
+      infoArr.push(store.cached.mediateEvent.applicants)
+      this.req.applicants = infoArr
+      this.validate()
+      .then(() => {
+        // 开启加载状态，按钮禁用，防止重复提交
+        this.loading = true
+      })
+      .then(() => {
+        // 提交数据
+        assessment({...this.req}).then((data = {}) => {
+          this.loading = false
+          this.cachable = false
+          this.$apply()
+          // 将案件id传递到上一个页面
+          ZanEvent.trigger('onSubmits', data.id)
+
+          wx.navigateBack()
+        })
+        return store.remove('assessmentApply')
+      })
+      .catch(e => {
+        // 关闭加载状态
+        this.loading = false
+        this.$apply()
+      })
+    }
+  }
+
+  // 校验
+  validate() {
+    return new Promise((resolve, reject) => {
+      const valid = validate({
+        'req.type': '请选择纠纷类型',
+        'req.remarks': '请输入纠纷描述',
+        'req.appeal': '请输入您的诉求',
+        'req.areasCode': '请选择纠纷发生地'
+      }, this)
+
+      valid ? resolve(valid) : reject(valid)
+    })
+  }
+
+  onShow() {
+    if (this.types.length === 0) {
+      getDisputeTypes()
+      .then(({types = []} = {}) => {
+        this.types = types
+
+        this.$apply()
+      })
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+.zan-field__title {
+  width: 120px;
+}
+</style>

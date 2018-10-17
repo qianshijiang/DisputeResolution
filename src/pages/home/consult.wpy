@@ -1,0 +1,324 @@
+<template>
+  <view class="container" style="{{ pickerShow ? 'height:100vh;overflow:hidden;pointer-events:none;' : '' }}">
+    <view class="zan-panel">
+      <picker range="{{ types }}" range-key="name" @change="onTypeChange">
+        <view class="zan-cell zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text> 纠纷类型：</view>
+          <view class="zan-cell__bd">
+            <view wx:if="{{ !!typeName }}">{{ typeName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+      </picker>
+    </view>
+
+    <view class="zan-panel">
+      <view class="zan-panel__title"><text class="text-orange">*</text> 纠纷描述：</view>
+      <view class="zan-cell zan-field">
+        <textarea
+          class="zan-cell__bd zan-field__input"
+          disabled="{{ pickerShow }}"
+          placeholder="请输入描述"
+          style="{{ pickerShow ? 'color:rgba(0,0,0,0);cursor-spacing:20px' : '' }}"
+          placeholder-style="{{ pickerShow ? 'color:rgba(0,0,0,0)' : '' }}"
+          value="{{ get_remarks }}"
+          @input="handleInput('remarks')"
+        ></textarea>
+      </view>
+    </view>
+
+    <view class="zan-panel">
+      <view class="zan-panel__title"><text class="text-orange">*</text> 您的诉求：</view>
+      <view class="zan-cell zan-field">
+        <textarea
+          class="zan-cell__bd zan-field__input"
+          disabled="{{ pickerShow }}"
+          placeholder="请输入您的诉求"
+          style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : ''}}"
+          placeholder-style="{{ pickerShow ? 'color:rgba(0,0,0,0);' : '' }}"
+          value="{{ get_appeal }}"
+          cursor-spacing = '140'
+          @input="handleInput('appeal')"
+        ></textarea>
+      </view>
+    </view>
+
+    <view class="zan-panel">
+      <!-- <view class="zan-hairline--bottom">
+        <view class="zan-cell zan-cell--access">
+          <view class="zan-cell__hd zan-field__title"><text class="text-orange">*</text>纠纷发生地：</view>
+          <view class="zan-cell__bd" @tap="showPicker">
+            <view wx:if="{{ !!addressName }}">{{ addressName }}</view>
+            <view wx:else class="gray-dark">请选择</view>
+          </view>
+          <view class="zan-cell__ft"></view>
+        </view>
+      </view> -->
+
+      <view class="zan-panel__title">相关资料</view>
+      <view style="padding:10px 5px;">
+        <img-picker
+          :list.sync="imgs"
+          :readonly.sync="loading"
+          @onPicker.user="handlePickerImg"
+          @onRemove.user="handleRemoveImg"
+        ></img-picker>
+        <view class="text-small text-gray" style="padding:5px 10px;">目前仅限图片类型资料，文件大小10M以内（如需上传其他格式的资料，请在PC端进行上传）</view>
+      </view>
+    </view>
+
+    <view class="zan-btns">
+      <button
+        class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}"
+        disabled="{{ loading }}"
+        @tap="handleSubmit"
+      >提交申请</button>
+    </view>
+  </view>
+
+ <!--  <address-picker
+    title="纠纷发生地"
+    :show.sync="pickerShow"
+    @change.user="handlePickerChange"
+  ></address-picker> -->
+</template>
+
+<script>
+import wepy from 'wepy'
+import validate from '@/utils/validate'
+import {validateFile} from '@/utils/utils'
+import {getDisputeTypes} from '@/api/common'
+import ImgPicker from '@/components/img-picker'
+import AddressPicker from '@/components/address-picker'
+import {saveDisputes, uploadAttachmentForInsert} from '@/api/home'
+import {HOST} from '@/utils/constants'
+
+export default class Consult extends wepy.page {
+  config = {
+    navigationBarTitleText: '人工咨询'
+  }
+
+  components = {
+    'img-picker': ImgPicker,
+    'address-picker': AddressPicker
+  }
+
+  data = {
+    types: [],
+    typeName: '',
+    pickerShow: false,
+    isDispute: true,
+    loading: false,
+    address: [],
+    get_remarks: '',
+    get_appeal: '',
+    req: {
+      // areaCode: '',
+      type: '',
+      remarks: '',
+      appeal: '',
+      messageId: '',
+    },
+    imgs: [],
+    results: []
+  }
+
+  computed = {
+    // addressName() {
+    //   return this.address.map(({name}) => name).join('')
+    // }
+  }
+
+  methods = {
+    onTypeChange({detail}) {
+      const item = this.types[detail.value]
+
+      this.req.type = item ? item.code : ''
+
+      this.typeName = item ? item.name : ''
+    },
+    handleInput(field, {detail}) {
+      this.req[field] = detail.value
+    },
+    showPicker() {
+      this.pickerShow = true
+    },
+    handlePickerChange(list = []) {
+      this.address = [...list]
+
+      // const item = list.pop()
+
+      // this.req.areaCode = item ? item.code : ''
+    },
+    // 选择一张图片
+    handlePickerImg() {
+      wx.chooseImage({
+        success: ({tempFiles = []}) => {
+          console.log(tempFiles)
+          if (validateFile(tempFiles)) {
+            this.imgs = this.imgs.concat(tempFiles)
+            this.$apply()
+          }
+        }
+      })
+    },
+    // 移除一张图片
+    handleRemoveImg(index) {
+      this.imgs.splice(index, 1)
+    },
+    // 提交
+    handleSubmit() {
+      // 校验
+      this.validate()
+      .then(() => {
+        // 开启加载状态，按钮禁用，防止重复提交
+        this.loading = true
+        this.results = []
+        // 上传图片
+        return this.startTask()
+      })
+      .then(() => {
+        // 提交数据
+        return saveDisputes({...this.req, disputesAttachments: this.results})
+      })
+      .then((data = {}) => {
+        // 关闭加载状态
+        this.loading = false
+        this.$apply()
+        wx.redirectTo({
+          url: `/pages/user/select-consultion?caseid=${data.id}`
+        })
+      })
+      .catch(e => {
+        // 关闭加载状态
+        this.loading = false
+        this.$apply()
+      })
+    }
+  }
+
+  // 启动上传任务
+  startTask() {
+    return new Promise((resolve, reject) => {
+      if (this.imgs.length) {
+        return this.uploadTask(0, resolve, reject)
+      }
+
+      resolve()
+    })
+  }
+
+  // 上传任务
+  uploadTask(index, done, fail) {
+    const task = this.taskItem(index)
+
+    const handler = (d = [], cb) => {
+      this.results = this.results.concat(d)
+
+      if (index + 1 === this.imgs.length) {
+        cb(d)
+      } else {
+        this.uploadTask(index + 1, done, fail)
+      }
+    }
+
+    task.then(d => handler(d, done)).catch(e => handler(e, fail))
+  }
+
+  // 单个上传任务
+  taskItem(index) {
+    return new Promise((resolve, reject) => {
+      const item = this.imgs[index]
+
+      // 若当前图片已经上传过了，则不处理，避免重复上传
+      if (item.status === 'success') {
+        resolve(index)
+      }
+
+      item.status = 'loading'
+      this.$apply()
+
+      this.uploadFile(index)
+      .then(({result = []}) => {
+        item.status = 'success'
+        this.$apply()
+        resolve(result)
+      })
+      .catch(e => {
+        item.status = 'error'
+        this.$apply()
+        reject(e)
+      })
+    })
+  }
+
+  // 上传文件
+  uploadFile(index) {
+    return new Promise((resolve, reject) => {
+      uploadAttachmentForInsert({
+        name: 'file',
+        filePath: this.imgs[index].path,
+        formData: {
+          disputesId: this.caseId
+        }
+      })
+      .then(resolve)
+      .catch(reject)
+    })
+  }
+
+  // 校验
+  validate() {
+    return new Promise((resolve, reject) => {
+      const valid = validate({
+        'req.type': '请选择纠纷类型',
+        'req.remarks': '请输入纠纷描述',
+        'req.appeal': '请输入您的诉求'
+        // 'req.areaCode': '请选择纠纷发生地'
+      }, this)
+
+      valid ? resolve(valid) : reject(valid)
+    })
+  }
+
+  onLoad(options) {
+    // console.log(options)
+
+    // 获取历史记录
+    wx.request({
+      data: {
+        id: options.uuId || ''
+      },
+      method: 'GET',
+      header: {
+        dsType: options.dsType,
+      },
+      url: HOST + 'disputes/getQuestionFromRobot',
+      success: (res) => {
+        this.get_remarks = res.data.title
+        this.typeName = res.data.case_cause
+        this.req.messageId = res.data.autoId
+        this.$apply()
+      }
+    })
+  }
+
+  onShow() {
+    if (this.types.length === 0) {
+      getDisputeTypes()
+      .then(({types = []} = {}) => {
+        this.types = types
+
+        this.$apply()
+      })
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+.zan-field__title {
+  width: 120px;
+}
+</style>

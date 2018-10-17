@@ -1,0 +1,422 @@
+<template>
+  <view hidden="{{ showInput }}">
+    <view class="zan-btns zan-hairline--top" wx:if="{{ showbtns }}">
+      <block wx:if="{{ isPlan }}">
+        <navigator url="confirm?{{ params }}&confirm=1" class="zan-btn zan-btn--primary">无异议</navigator>
+        <view class="zan-btn zan-btn--primary zan-btn--plain" hover-class="button-hover" @tap="handleSwitch">有异议</view>
+      </block>
+      <block wx:else>
+        <navigator url="confirm?{{ params }}&confirm=1" class="zan-btn zan-btn--primary">确定</navigator>
+        <button class="zan-btn zan-btn--primary zan-btn--plain {{ btnLoading ? 'zan-btn--loading' : '' }}" disabled="{{ btnLoading }}" @tap="handleReject">拒绝</button>
+      </block>
+    </view>
+
+    <view wx:if="{{ !loading }}" class="content-wrapper">
+      <view wx:if="{{ caseNo }}" class="section-caption">
+        <view class="section-title">{{ title }}：{{ caseNo }}号</view>
+      </view>
+      <view class="zan-panel content-padded content">
+        <text decode space>{{ content }}</text>
+      </view>
+
+      <view wx:if="{{ !isPromise }}" class="zan-panel content-padded">
+        <view wx:for="{{ confirms }}" wx:key="id" class="sign-item">
+          <text class="text-primary">{{ item.title }}({{ item.actualName }})：</text>
+          <text wx:if="{{ item.isConfirm == true }}" class="text-primary">确认</text>
+          <text wx:if="{{ item.isConfirm == false }}" class="text-danger">拒绝</text>
+          <text wx:if="{{ item.isConfirm == null }}" class="text-orange">待确认</text>
+          <image wx:if="{{ item.signature }}" mode="aspectFit" class="sign-img" src="{{ item.signature }}"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{ showInput }}" class="container">
+    <view class="zan-panel">
+      <view class="zan-cell">
+        <textarea value="{{ dissent }}" placeholder="请输入异议书内容" class="zan-cell__bd zan-field__input" @input="handleInput" @confirm="handleConfirm"></textarea>
+      </view>
+    </view>
+
+    <view class="zan-btns">
+      <view class="zan-btn zan-btn--primary" hover-class="button-hover" @tap="handleConfirm">下一步</view>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {HOST} from '@/utils/constants'
+import validate from '@/utils/validate'
+import {
+  getDisputeFact,
+  getAdjustRecord,
+  getMediationBook,
+  getLawJudgleBook,
+  getMediationPlan,
+  submitRecordBook, // 笔录
+  submitDisputeFact, // 无争议事实书
+  submitPromiseBook, // 承诺书
+  submitDissentBook, // 异议书
+  submitMediatePlan, // 无异议调解方案
+  submitLawJudleBook, // 司法确认申请书
+  submitMediationBook // 协议书
+} from '@/api/mediate'
+
+export default class Document extends wepy.page {
+  config = {}
+
+  data = {
+    type: '',
+    code: '',
+    caseId: '',
+    caseNo: '',
+    meetingId: '',
+    sources: {},
+    content: '',
+    confirms: [],
+    dissent: '',
+    isPromise: false,
+    isDissent: false,
+    showbtns: false,
+    loading: false,
+    showInput: false,
+    btnLoading: false
+  }
+
+  computed = {
+    title() {
+      if (this.code) {
+        switch (this.code) {
+        case '44':
+          let typeText = ['调解', '调查'][this.type] || ''
+          return `${typeText}笔录`
+        case '81': return '无争议事实书'
+        case '87':
+          if (this.isPromise) {
+            return '承诺书'
+          }
+
+          if (this.isDissent) {
+            return '异议书'
+          }
+
+          return '无异议调解方案'
+        case '93': return '司法确认申请书'
+        default: return '调解协议'
+        }
+      }
+
+      return ''
+    },
+    params() {
+      const params = `code=${this.code}&caseid=${this.caseId}&sign=${this.type}&meetingid=${this.meetingId}&planid=${this.sources.LawMschemeId}`
+
+      if (this.isPromise) {
+        return `${params}&promise=${this.isPromise}&promiseid=${this.sources.lawPromiseId}`
+      }
+
+      return params
+    },
+    isPlan() {
+      return this.code === '87' && !this.isPromise && !this.isDissent
+    }
+  }
+
+  watch = {
+    title(val) {
+      val && wx.setNavigationBarTitle({title: val})
+    },
+    loading(val) {
+      val ? wx.showLoading() : wx.hideLoading()
+    }
+  }
+
+  methods = {
+    handleInput({detail}) {
+      this.dissent = detail.value
+    },
+    // 提交异议书
+    handleConfirm(e) {
+      const valid = validate({
+        dissent: '请输入异议书内容'
+      }, this)
+
+      if (valid) {
+        wx.navigateTo({
+          url: `confirm?${this.params}&confirm=0&content=${encodeURIComponent(this.dissent)}`
+        })
+      }
+    },
+    // 拒绝
+    handleReject () {
+      this.btnLoading = true
+      this.$apply()
+      this.switchSubmit()
+      .then(() => {
+        this.btnLoading = false
+        this.$apply()
+
+        this.fetch()
+      })
+      .catch(e => {
+        this.btnLoading = false
+        this.$apply()
+        console.log(e)
+        wx.showModal({content: JSON.stringify(e)})
+      })
+    },
+    // 切换异议书输入
+    handleSwitch() {
+      this.showInput = true
+      this.$apply()
+    }
+  }
+
+  switchSubmit() {
+    return new Promise((resolve, reject) => {
+      const opts = {
+        isRotated: 0,
+        isConfirm: 0,
+        lawCaseId: this.caseId
+      }
+
+      switch (this.code) {
+      // 笔录
+      case '44':
+        opts.meetingId = this.meetingId
+        return submitRecordBook(opts).then(resolve).catch(reject)
+      // 协议书
+      case '56':
+        return submitMediationBook(opts).then(resolve).catch(reject)
+      // 无争议事实书
+      case '81':
+        return submitDisputeFact(opts).then(resolve).catch(reject)
+      // 无异议调解方案
+      case '87':
+        // 承诺书
+        if (this.isPromise) {
+          opts.promiseId = this.sources.lawPromiseId
+
+          return submitPromiseBook(opts).then(resolve).catch(reject)
+        }
+
+        opts.lawMschemeId = this.sources.LawMschemeId
+
+        // 异议书
+        if (this.isDissent) {
+          opts.lawDissentContent = this.content
+
+          return submitDissentBook(opts).then(resolve).catch(reject)
+        }
+
+        // 调解方案
+        return submitMediatePlan(opts).then(resolve).catch(reject)
+      // 司法确认申请书
+      case '93':
+        return submitLawJudleBook(opts).then(resolve).catch(reject)
+      default:
+        reject(new TypeError(`未知的code：${this.code}`))
+      }
+    })
+  }
+
+  transformConfirms(list = []) {
+    return list.map((item = {}) => {
+      let {
+        signature, personnel = {}
+      } = item
+      let {
+        role = {},
+        title = '',
+        actualName = ''
+      } = personnel
+
+      if (signature) {
+        signature = `${HOST}lawCaseAttachment/${signature}`
+      }
+
+      if (!title) {
+        title = role.role || ''
+      }
+
+      return {...item, signature, actualName, title}
+    })
+  }
+
+  fetch() {
+    this.loading = true
+
+    this.fetchSwitch()
+    .then((data = {}) => {
+      let {
+        sign = '',
+        caseNo = '',
+        content = '',
+        showView = '',
+        lmsMknow = '',
+        lmsMsolve = '',
+        promiseContent = '',
+        lawDissentContent = '',
+        lawWholeConfirms = [],
+        showConfirmButton = false
+      } = data
+
+      this.type = sign
+      this.caseNo = caseNo
+      this.sources = {...data}
+      this.confirms = this.transformConfirms(lawWholeConfirms)
+      this.showbtns = showConfirmButton
+      this.isPromise = showView === '1'
+      this.isDissent = showView === '3'
+      // 调解方案
+      if (showView === '2') {
+        content = `${lmsMsolve}\n\n${lmsMknow}`
+      }
+      // 承诺书
+      if (this.isPromise) {
+        content = promiseContent
+      }
+      // 异议书
+      if (this.isDissent) {
+        content = lawDissentContent
+      }
+
+      this.content = content.replace(/\u0020/g, '&nbsp;').replace(/\\n/g, '\n')
+
+      this.loading = false
+
+      this.$apply()
+    })
+    .catch(e => {
+      this.loading = false
+
+      this.$apply()
+    })
+  }
+
+  fetchSwitch() {
+    const params = {
+      lawCaseId: this.caseId
+    }
+
+    switch (this.code) {
+    case '44':
+      return getAdjustRecord({...params, meetingId: this.meetingId})
+        .then((data = {}) => {
+          let {adjustRecord = {}} = data
+          let {
+            sgin = '',
+            caseNo = '',
+            content = ''
+          } = adjustRecord
+
+          return {...data, caseNo, content, sign: sgin.slice(1)}
+        })
+    // 无争议事实书
+    case '81':
+      return getDisputeFact(params)
+        .then((data = {}) => {
+          const {lawNoDisputeFact = {}} = data
+
+          return {...data, caseNo: lawNoDisputeFact.caseNo}
+        })
+    // 无异议调解方案
+    case '87':
+      return getMediationPlan(params)
+        .then((data = {}) => {
+          const {showConfirmBtn = false} = data
+
+          return {...data, showConfirmButton: showConfirmBtn}
+        })
+    // 司法确认申请书
+    case '93':
+      return getLawJudgleBook(params)
+    // 协议书
+    default:
+      return getMediationBook(params)
+        .then((data = {}) => {
+          const {lawAdjustBook = {}} = data
+
+          return {...data, caseNo: lawAdjustBook.caseNo}
+        })
+    }
+  }
+
+  onShow() {
+    this.dissent = ''
+    this.showInput = false
+
+    this.$apply()
+
+    this.fetch()
+  }
+
+  onLoad({code, caseid, meetingid}) {
+    this.code = code
+    this.caseId = caseid
+    this.meetingId = meetingid
+  }
+}
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+
+  .section-caption + .zan-panel {
+    margin: 0;
+  }
+
+  .zan-field__title,
+  .zan-panel > .zan-panel__title {
+    min-width: 120px;
+    color: $gray-dark;
+  }
+
+  .zan-btns {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 10px;
+    z-index: 10;
+    background-color: $white;
+
+    > .zan-btn {
+      flex: 1;
+      margin-bottom: 0;
+      overflow: visible;
+    }
+
+    .zan-btn + .zan-btn {
+      margin-left: 10px;
+    }
+  }
+
+  .content {
+    font-size: 14px;
+  }
+
+  .sign-item {
+    margin-bottom: 5px;
+
+    > text,
+    > image {
+      display: inline-block;
+      vertical-align: middle;
+    }
+  }
+
+  .sign-img {
+    width: 60px;
+    height: 30px;
+    margin-left: 5px;
+  }
+
+  .zan-btns ~ .content-wrapper,
+  .zan-btns + .content-wrapper {
+    padding-bottom: 80px;
+  }
+</style>

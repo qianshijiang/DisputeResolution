@@ -1,0 +1,122 @@
+<template>
+  <view class="container">
+    <view class="zan-panel">
+      <view class="zan-cell">
+        <image class="zan-cell__icon imgphoto" src="{{info.counselor.imgPhoto}}" mode="aspectFill"></image>
+        <view class="zan-cell__bd" style="padding-left: 20px">
+          <view style="height: 200rpx">{{ info.counselor.actualName }}</view>
+          <view>法律服务咨询师</view>
+        </view>
+      </view>
+    </view>
+
+    <view style="padding: 20px 0">
+      <view class="starsbox">请对咨询师进行星级评价</view>
+      <view class="starsbox">
+        <block wx:for="{{stars}}" wx:key="index">
+          <view class="icon icon-xingping star {{ key > item ? 'star-active' : '' }}" style="left: {{ item * 80}}rpx" @tap="select({{item+1}})"></view>
+        </block>
+      </view>
+    </view>
+
+    <view class="zan-panel">
+      <textarea class="textarea" placeholder="请为咨询师评价" @input="input"></textarea>
+    </view>
+    <view><text>\n</text></view>
+    <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="submit">提交</button>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {getCounselor, submitComment} from '@/api/user'
+  export default class SubmitComments extends wepy.page {
+    config = {
+      navigationBarTitleText: '评价咨询师'
+    }
+    data={
+      Id: '',
+      info: {},
+      stars: [0, 1, 2, 3, 4],
+      key: 0, // 评分
+      text: '',
+      loading: false
+    }
+    methods={
+      select(key) {
+        this.key = key
+        this.$apply()
+        console.log(this.key)
+      },
+      input({detail}) {
+        this.text = detail.value
+      },
+      submit() {
+        this.loading = true
+        submitComment({
+          disputesId: this.Id,
+          sessionId: this.info.sessionId,
+          visible: 0,
+          level: this.key,
+          content: this.text}
+        ).then(() => {
+          this.loading = false
+          wx.navigateBack({
+            delta: 1
+          })
+        }
+        ).catch(() => {
+          this.loading = false
+          this.$apply()
+        })
+      }
+    }
+    onLoad({caseid}) {
+      this.Id = caseid
+      getCounselor({
+        disputesId: caseid
+      }).then((data = {}) => {
+        this.info = data
+        this.$apply()
+        console.log(this.info)
+      })
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    padding:30rpx;
+    background-color: $gray-f8;
+  }
+  .imgphoto{
+    width: 280rpx;
+    height: 360rpx;
+    display: block;
+    border-radius: 5px;
+  }
+  .starsbox {
+    position: relative;
+    display: inline-block;
+    line-height: 30px;
+    height: 30px;
+    .star{
+      position: absolute;
+      font-size: 60rpx;
+      color: $gray;
+    }
+    .star-active {
+      color: $orange;
+    }
+  }
+  .starsbox + .starsbox {
+    top: 10px;
+    left: 10px;
+  }
+  .textarea{
+    width: 100%;
+    height: 200rpx;
+    padding: 10px;
+  }
+</style>

@@ -1,0 +1,290 @@
+<template>
+  <view class="msg-container">
+    <scroll-view scroll-y scroll-top="{{ scrollTop }}" @scrolltoupper="scrollToUpper">
+      <zan-loadmore wx:if="{{ loading }}" :loading.sync="loading"></zan-loadmore>
+      <view class="msg-list">
+        <view class="zan-cell" wx:for="{{ messages }}" wx:key="">
+          <view class="zan-cell__hd"><view class="dot"></view></view>
+          <view class="zan-cell__bd">
+            <view class="zan-cell__text">{{ item.sender }} {{ item.time }}</view>
+            <view class="zan-cell__desc">{{ item.content }}</view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="fixed-bar fixed-bar--footer input-bar zan-hairline--top">
+    <input type="text" value="{{ msg }}" class="input-bar__input" placeholder="请输入内容" cursor-spacing="{{ 10 }}" @input="handleInput" confirm-type="send" @confirm="handleSend"/>
+    <button class="zan-btn input-bar__btn zan-btn--primary zan-btn--small" disabled="{{ disabled }}" @tap="handleSend">发送</button>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import StoreFactory from '@/utils/store'
+import ZanLoadmore from '@/components/zan-loadmore'
+import {getMessage, sendMessage, getHistoryMsg} from '@/api/mediate'
+// 角色类型定义
+const ROLE = {
+  DEMANDANT: 10, // 申请人
+  DEFENDANT: 20, // 被申请人
+  DEMANDANT_AGENT: 40, // 申请人代理人
+  DEMANDANT_SPECIAL_AGENT: 41, // 申请人特别代理人
+  DEFENDANT_AGENT: 46, // 被申请人代理人
+  DEFENDANT_SPECIAL_AGENT: 47, // 被申请人特别代理人
+  MEDIATOR: 60, // 调解员
+  ASSISTMEDIATOR: 61, // 协助调解员
+  VISITOR: 71 // 观察人员
+}
+const trim = (s = '') => {
+  return s.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+}
+const store = StoreFactory.getStore('liveEvent')
+
+const ZanEvent = store.get('chatEvent')
+
+let chatHandler = null
+ZanEvent && ZanEvent.on('getChatMsg', data => {
+  chatHandler && chatHandler(data)
+})
+
+export default class Chat extends wepy.page {
+  config = {
+    enablePullDownRefresh: true,
+    navigationBarTitleText: '调解笔录'
+  }
+
+  components = {
+    'zan-loadmore': ZanLoadmore
+  }
+
+  data = {
+    messages: [],
+    scrollTop: 0,
+    msg: '',
+    noMore: false,
+    loading: false,
+    lawMeettingId: '',
+    personnelId: '',
+    roleName: '',
+    actualName: ''
+  }
+
+  computed = {
+    disabled() {
+      return !this.msg
+    }
+  }
+
+  watch = {
+    messages(list = []) {
+      if (list.length) {
+        this.$nextTick(() => {
+          wx.createSelectorQuery().select('.msg-list').boundingClientRect(({height}) => {
+            this.scrollTop = height
+
+            this.$apply()
+          }).exec()
+        })
+      }
+    }
+  }
+
+  methods = {
+    handleInput({detail}) {
+      this.msg = trim(detail.value)
+    },
+    handleSend(e) {
+      if (this.role === ROLE.VISITOR) {
+        this.msg = ''
+        wx.showToast({title: '观摩人员无法发送消息', icon: 'none'})
+      } else {
+        this.sendMessage()
+        this.msg = ''
+      }
+    },
+    handleError(index) {
+      const item = this.list[index]
+
+      if (item) {
+        item.headUrl = '/images/sign/avatar_default.png'
+
+        this.$apply()
+      }
+    }
+  }
+  // 发送文字消息
+  sendMessage() {
+    wx.showNavigationBarLoading()
+    sendMessage({
+      lawMeettingId: this.lawMeettingId,
+      personnelId: this.personnelId,
+      content: this.msg,
+      sender: `[${this.roleName}] ${this.actualName}`,
+      isVoice: 0
+    }, () => {
+      wx.showToast({title: '发送失败，请稍后再试！', icon: 'none'})
+    })
+    .then((data = {}) => {
+      ZanEvent.trigger('sendPublicMessage', {
+        data: data.nemessageId
+      })
+      wx.hideNavigationBarLoading()
+    })
+    .catch(e => wx.hideNavigationBarLoading())
+  }
+
+  fetchMsg(id) {
+    wx.showNavigationBarLoading()
+    getMessage({
+      nemessageId: id
+    })
+    .then((data = {}) => {
+      wx.hideNavigationBarLoading()
+      this.messages.push(this.transformMsg(data))
+
+      this.$apply()
+    })
+    .catch(e => wx.hideNavigationBarLoading())
+  }
+
+  // 加载历史文字消息
+  fetchHistoryMsg() {
+    if (this.noMore || this.loading) return
+    const item = this.messages[0]
+    this.loading = true
+    getHistoryMsg({
+      lawMeettingId: this.lawMeettingId,
+      nemessageId: item ? item.id : 0,
+      pagesize: 20
+    })
+    .then((list = []) => {
+      this.loading = false
+
+      if (list.length) {
+        this.messages = list.map(item => this.transformMsg(item)).concat(this.messages)
+      } else {
+        this.noMore = true
+      }
+
+      this.$apply()
+    })
+    .catch(e => {
+      this.loading = false
+      this.$apply()
+    })
+  }
+
+  // 转换消息显示格式
+  transformMsg(item = {}) {
+    let time = item.create_time ? item.create_time.substr(11, 5) : ''
+
+    return {...item, time}
+  }
+
+  onPullDownRefresh() {
+    this.fetchHistoryMsg(() => wx.stopPullDownRefresh())
+  }
+  scrollToUpper() {
+    this.fetchHistoryMsg()
+  }
+  onLoad({lawMeettingId, personnelId, roleName, actualName}) {
+    this.lawMeettingId = lawMeettingId
+    this.personnelId = personnelId
+    this.roleName = roleName
+    this.actualName = actualName
+    chatHandler = ({data}) => {
+      console.log(data)
+      this.fetchMsg(data)
+    }
+
+    this.fetchHistoryMsg()
+  }
+
+  onUnload() {
+    if (chatHandler) {
+      chatHandler = null
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables';
+
+page {
+  height: 100%;
+}
+
+.msg-container {
+    position: absolute;
+    width: 100%;
+    top:0;
+    left:0;
+    bottom: 96rpx;
+    overflow: hidden;
+  }
+  scroll-view{
+    height: 100%;
+  }
+  .msg-list {
+    .zan-cell::after {
+      width: auto;
+      right: 15px;
+      transform: scaleY(.5);
+    }
+
+    .zan-cell__hd {
+      align-self: flex-start;
+      padding-right: 8px;
+    }
+
+    .dot {
+      display: inline-block;
+      vertical-align: top;
+      width: 6px;
+      height: 6px;
+      margin-top: 3px;
+      background-color: $orange;
+      border-radius: 50%;
+    }
+
+    .zan-cell__text {
+      font-size: 12px;
+      line-height: 1;
+      margin-bottom: 5px;
+      color: $primary-color;
+    }
+  }
+  .input-bar {
+    display: flex;
+    flex-direction: row;
+    padding: 6px 12px;
+    box-sizing: border-box;
+    background-color: $white;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+  .input-bar__input {
+    flex: 1;
+    height: 34px;
+    min-height: 34px;
+    padding: 3px 10px;
+    line-height: 34px;
+    background-color: $background-color;
+    border: 1rpx solid $border-color;
+    border-radius: 3px;
+    box-sizing: border-box;
+  }
+  .input-bar__btn {
+    height: 34px;
+    min-height: 34px;
+    line-height: 34px;
+    border-radius: 3px;
+  }
+  .input-bar__input + .input-bar__btn {
+    margin-left: 10px;
+  }
+</style>

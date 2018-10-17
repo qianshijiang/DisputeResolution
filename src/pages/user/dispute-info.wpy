@@ -1,0 +1,138 @@
+<template>
+  <view class="container">
+
+    <view class="section-caption zan-hairline--bottom">
+      <view class="section-title">案件编号:{{info.caseNo}}</view>
+    </view>
+    <view class="zan-panel no-mg">
+
+      <view class="zan-cell">
+        <view class="zan-field__title">纠纷类型:</view>
+        <view class="zan-cell__bd">{{info.type.name}}</view>
+      </view>
+
+      <view class="zan-cell">
+        <view class="zan-field__title">纠纷发生地:</view>
+        <view class="zan-cell__bd">{{info.lname}}{{info.address}}</view>
+      </view>
+
+      <view class="zan-panel__title">申请人诉求:</view>
+      <view class="zan-cell">
+        <view class="zan-cell__bd break">{{ info.appeal }}</view>
+      </view>
+
+    </view>
+
+    <view class="section-caption zan-font-bold zan-hairline--top-bottom" style="margin-bottom:20rpx">纠纷信息</view>
+
+    <view class="btnbox">
+
+      <navigator class="btn" url="party?caseid={{Id}}">
+        <view class="icon icon-dangshiren" ></view>
+          <text class="zan-font-bold">当事人</text>
+      </navigator>
+
+      <navigator class="btn" url="dispute-info2?caseid={{Id}}">
+        <view class="icon icon-jiufenxinxi"></view>
+        <text class="zan-font-bold">纠纷信息</text>
+      </navigator>
+
+      <navigator class="btn" url="/pages/mediate/material?caseid={{Id}}&back=1&status={{ info.status }}">
+        <view class="icon icon-zhengjucailiao"></view>
+        <text class="zan-font-bold">证据材料</text>
+      </navigator>
+    </view>
+
+    <view class="fixed-bar fixed-bar--footer">
+      <navigator class="zan-btn zan-btn--primary" url="mediation-progress?caseid={{Id}}">调解进度</navigator>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {getLawCaseDetail} from '@/api/user'
+  export default class DisputeInfo extends wepy.page {
+    config = {
+      navigationBarTitleText: '纠纷详情'
+    }
+    data={
+      Id: '',
+      info: {},
+    }
+    methods={
+    }
+    onLoad({caseid}) {
+      this.Id = caseid
+      getLawCaseDetail({
+        lawCaseId: caseid
+      }).then((data = {}) => {
+        this.info = data
+        wx.setStorage({
+          key: 'status1',
+          data: data.status
+        })
+        this.$apply()
+        console.log(this.info)
+      })
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    padding-bottom: 45px;
+  }
+  .zan-cell__ft{
+    color: $primary-color;
+    font-size: 14px;
+  }
+
+  .section-caption{
+    background-color: $gray-ef;
+  }
+  .zan-field__title,
+  .zan-panel > .zan-panel__title {
+    color: $gray-dark;
+  }
+  .btnbox{
+    display: flex;
+    justify-content: space-around;
+    padding: 15rpx;
+    .btn{
+      width: 210rpx;
+      height: 185rpx;
+      background-color: #f1f8ff;
+      border: 1px solid $blue;
+      color: $primary-color;
+      font-size: 30rpx;
+      border-radius: 10rpx;
+      overflow: hidden;
+      padding: 20rpx;
+      box-sizing: border-box;
+      text-align: center;
+      .icon{
+        font-size: 68rpx;
+        background-color: $primary-color;
+        color: $white;
+        width: 100rpx;
+        height: 100rpx;
+        border-radius: 50%;
+        line-height: 100rpx;
+        margin: 0 auto 10rpx;
+      }
+    }
+  }
+  .zx-btn{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .break{
+    word-wrap:break-word;
+    width:100%;
+  }
+</style>

@@ -1,0 +1,357 @@
+<template>
+  <search-bar
+    class="fixed-bar--header"
+    @focus.user="handleFocus"
+    @input.user="handleInput"
+    @cancel.user="handleCancel"
+    @confirm.user="handleConfirm"
+  ></search-bar>
+
+  <view wx:if="{{ searching }}" class="scroll-wrapper">
+    <scroll-view scroll-y style="height: 100%;">
+      <view class="zan-panel search-panel no-bd">
+        <view class="zan-panel__title">热门搜索</view>
+        <view class="zan-tags zan-hairline--bottom">
+          <view wx:for="{{ tags }}" wx:key="index" class="zan-tag" @tap="handleClick({{ item }})">{{ item }}</view>
+        </view>
+        <view class="zan-panel__title">
+          <text>历史搜索</text>
+          <button class="zan-btn zan-btn--text zan-btn--small zan-pull-right" @tap="handleClear"><text class="icon icon-delete"></text></button>
+        </view>
+        <view class="zan-tags">
+          <view wx:for="{{ history }}" wx:key="index" class="zan-tag" @tap="handleClick({{ item }})">{{ item }}</view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="content {{ searching ? 'no-scroll' : '' }}">
+    <view class="zan-panel no-bd--top no-mg">
+      <view
+        wx:for="{{ list }}"
+        wx:key="id"
+        class="zan-cell"
+        hover-class="button-hover"
+        @tap="handleChecked({{ item.id }})"
+      >
+        <view class="zan-cell__icon">
+          <image
+            class="avatar"
+            mode="aspectFill"
+            lazy-load="true"
+            src="{{ item.imgPhoto ? item.imgPhoto : '/images/sign/avatar_default.png' }}"
+            @error="handleError({{ index }})"
+          ></image>
+        </view>
+        <view class="zan-cell__bd">
+          <view class="zan-cell__text">{{ item.actualName }}</view>
+          <view class="zan-cell__desc">{{ item.job }}</view>
+          <view class="text-small">{{ item.ability }}</view>
+        </view>
+        <view class="zan-cell__ft text-primary text-small">{{ item.isLogin !== '-1' ? '在线' : '' }}</view>
+      </view>
+    </view>
+    </view>
+    <zan-loadmore
+      wx:if="{{ !nodata }}"
+      :loading.sync="loading"
+      :nodata.sync="nodata"
+      :nomore.sync="nomore"
+      nomoreText="已经到底了"
+    ></zan-loadmore>
+    <view wx:if="{{ nodata && !loading }}" class="nodata-view">
+      <view class="nodata-view__icon"><view class="icon icon-tijianbaogaochaxun"></view></view>
+      <view class="nodata-view__label">当前无咨询师</view>
+    </view>
+
+</template>
+
+<script>
+import wepy from 'wepy'
+import {HOST} from '@/utils/constants'
+import {debounce} from '@/utils/utils'
+import {getCounselors} from '@/api/user'
+import SearchBar from '@/components/search-bar'
+import ZanLoadmore from '@/components/zan-loadmore'
+import {getItem, setItem, removeItem} from '@/utils/storage'
+
+const tags = [
+  '婚姻继承', '消费维权', '劳动争议', '民间借贷', '物业纠纷',
+  '知识产权', '房屋买卖', '房屋租赁', '征地拆迁', '交通事故',
+  '医疗事故', '人身损害', '合伙联营', '公司业务', '证券票据',
+  '破产重组', '涉外商事', '国家赔偿', '行政复议', '行政诉讼',
+  '刑事案件', '名誉侵权', '网络纠纷'
+]
+
+const HISTORY_KEY = 'consultHistory'
+
+export default class SelectConsultion extends wepy.page {
+  config = {
+    navigationBarTitleText: '选择咨询师'
+  }
+
+  components = {
+    'search-bar': SearchBar,
+    'zan-loadmore': ZanLoadmore
+  }
+
+  data={
+    tags,
+    // 页码
+    pageNum: 0,
+    // 每页数量
+    pageSize: 10,
+    // 总数量
+    itemCount: 0,
+    // 是否正在加载
+    loading: false,
+    // 是否已加载完
+    nomore: false,
+    // 是否无数据
+    nodata: false,
+    // 数据数组
+    list: [],
+    // 案件id
+    caseId: '',
+    // 搜索关键字
+    keywords: '',
+    // 历史搜索记录
+    history: [],
+    searching: false
+  }
+
+  methods={
+    handleInput({detail}) {
+      this.keywords = detail.value
+    },
+    // 输入框获焦
+    handleFocus() {
+      if (this.__timer) {
+        clearTimeout(this.__timer)
+        this.__timer = null
+      }
+
+      this.searching = true
+      this.$apply()
+    },
+    // 输入框失去焦点
+    // handleBlur() {
+    //   this.__timer = setTimeout(() => {
+    //     this.searching = false
+    //     this.$apply()
+    //   }, 200)
+    // },
+    // 取消
+    handleCancel() {
+      this.keywords = ''
+      this.$broadcast('setValue', '')
+      this.searching = false
+      this.$apply()
+    },
+    // 点击键盘上的搜索按钮
+    handleConfirm() {
+      if (this.keywords) {
+        let list = [...this.history, this.keywords]
+        this.history = list.filter((text, index) => list.indexOf(text) === index)
+        setItem(HISTORY_KEY, this.history)
+      }
+      this.searching = false
+      this.$apply()
+
+      this.debounceSearch()
+    },
+    // 图片加载失败
+    handleError(index) {
+      const item = this.list[index]
+
+      if (item.onerror) {
+        return
+      }
+
+      item.imgPhoto = '/images/sign/avatar_default.png'
+      item.onerror = true
+
+      this.$apply()
+    },
+    // 点击热门搜索
+    handleClick(text) {
+      this.keywords = text
+      this.$broadcast('setValue', text)
+
+      let list = [...this.history, text]
+      this.history = list.filter((text, index) => list.indexOf(text) === index)
+      this.searching = false
+      this.$apply()
+
+      setItem(HISTORY_KEY, this.history)
+    },
+    // 清除历史记录
+    handleClear() {
+      clearTimeout(this.__timer)
+      wx.showModal({
+        title: '提示',
+        content: '确定要清空历史搜索吗？',
+        success: ({confirm}) => {
+          if (confirm) {
+            this.history = []
+            this.$apply()
+            removeItem(HISTORY_KEY)
+          }
+        }
+      })
+    },
+    handleChecked(id) {
+      const url = `${HOST}session/toMobileSession?disputesId=${this.caseId}&counselorId=${id}`
+
+      wx.redirectTo({
+        url: `/pages/webview/webview?url=${encodeURIComponent(url)}`
+      })
+    }
+  }
+
+  watch = {
+    keywords(val) {
+      this.debounceSearch()
+    }
+  }
+
+  // 搜索防抖处理
+  debounceSearch() {
+    if (!this.__debounceFn) {
+      this.__debounceFn = debounce(() => {
+        this.clear()
+        this.onPullup()
+      }, 300)
+    }
+
+    this.__debounceFn()
+  }
+
+  // 下拉到底
+  onReachBottom() {
+    this.onPullup()
+  }
+
+  // 上拉加载
+  onPullup(cb) {
+    // 若没有数据，或已加载完，或正在加载，则不做处理
+    if (this.nodata || this.nomore || this.loading) return
+
+    const {pageNum, pageSize} = this
+
+    // 开启加载状态
+    this.loading = true
+    getCounselors({
+      pageSize,
+      // 加载下一页的数据
+      pageNum: pageNum + 1,
+      search: this.keywords
+    })
+      .then((data = {}) => {
+        // 关闭加载状态
+        this.loading = false
+
+        // 将返回的数据追加到list中
+        this.list = this.list.concat(data.counselors || [])
+        this.itemCount = data.size || 0
+        // 计算是否有数据
+        this.nodata = this.itemCount === 0
+        // 计算是否已加载完
+        this.nomore = !this.nodata && this.list.length === this.itemCount
+
+        // 若未加载完，则页码加1
+        if (!this.nodata && !this.nomore) {
+          this.pageNum++
+        }
+
+        this.$apply()
+
+        cb && cb()
+      })
+      .catch(() => {
+        // 关闭加载状态
+        this.loading = false
+        this.$apply()
+
+        cb && cb()
+      })
+  }
+
+  clear() {
+    this.loading = false
+    this.nodata = false
+    this.nomore = false
+    this.list = []
+    this.pageNum = 0
+    this.itemCount = 0
+  }
+
+  onLoad({caseid}) {
+    this.caseId = caseid
+    getItem(HISTORY_KEY)
+    .then(({data = []}) => {
+      this.history = data
+    })
+
+    // 初始化后执行一次上拉加载
+    this.onPullup()
+  }
+}
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+  page{
+    padding-top: 46px;
+  }
+
+  .content {
+    position: relative;
+  }
+
+  .no-scroll {
+    height: calc(100vh - 46px);
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .avatar {
+    display: block;
+    width: 100rpx;
+    height: 100rpx;
+    overflow: hidden;
+    margin-right: 5px;
+    border: 1rpx solid $border-color;
+    border-radius: 50%;
+  }
+
+  .nodata-view{
+    height: calc(100vh - 46px);
+  }
+
+  .scroll-wrapper {
+    z-index: 10;
+    background-color: $white;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
+  .search-panel,
+  .zan-panel__title {
+    margin: 0;
+  }
+
+  .zan-tags {
+    padding: 10px;
+  }
+
+  .zan-tag {
+    margin: 5px;
+    padding: 3px 5px;
+    font-size: 12px;
+    color: $gray-darker;
+    background-color: $background-color;
+  }
+
+</style>

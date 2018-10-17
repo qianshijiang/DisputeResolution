@@ -1,0 +1,717 @@
+<template>
+  <view class="container">
+    <view class="banner"><image src="/images/home/banner.jpg"></image></view>
+
+    <view class="user-bar">
+      <view class="zan-cell zan-cell--access" style="padding:6px 10px;" @tap="navigateTo('/pages/user/user')">
+        <view class="zan-cell__icon">
+          <view class="avatar">
+            <image src="{{ avatarUrl }}" mode="aspectFill" style="width:100%;height:100%;" @error="onError"></image>
+          </view>
+        </view>
+        <view class="zan-cell__bd inner">
+          <view class="nick-name">
+            <view class="zan-ellipsis">您好，{{ nickName }}</view>
+          </view>
+          <view>进行中事件 <text class="text-orange">{{ count }}</text></view>
+        </view>
+        <view class="zan-cell__ft"></view>
+      </view>
+      <!--<block wx:for="{{list}}" wx:key="id">-->
+      <view class="{{ loading ? 'zan-btn--loading' : '' }}">
+        <navigator wx:if="{{hasToken && !living && listo.length === 1}}"  class="zan-cell__bd zan-center text-orange" style="margin-top: 15px;margin-bottom:15px;color: #4ba0f2" url="/pages/mediate/live?caseid={{listo[0].lawCase.lawCaseId}}&meetingid={{listo[0].meetingId}}&userid={{listo[0].lawCase.personnelId}}&role={{listo[0].lawCase.role}}">
+          您有一起<span style="color:red;">{{listo[0].lawCase.type}}</span>案件可进入视频调解</navigator>
+      <navigator wx:if="{{hasToken && dblist.length === 1}}"  class="zan-cell__bd zan-center text-orange" style="margin-top: 15px;margin-bottom:15px;color: #4ba0f2" url="/pages/mediate/document?code={{dblist[0].statusCode}}&meetingid={{dblist[0].meetingId}}&caseid={{dblist[0].lawCaseId}}">
+        您有一起<span style="color:red;">{{dblist.lawCaseProgress.type}}</span>案件可进入签名</navigator>
+      <navigator wx:if="{{hasToken && listo.length > 1 && !living}}"  class="zan-cell__bd zan-center text-orange" style="margin-top: 15px;margin-bottom:15px;color: #4ba0f2" url="my-mediating?title=tv">
+        您有<span style="color:red;">{{listo.length}}</span>场调解会议，点击查看</navigator>
+      <navigator wx:if="{{hasToken && dblist.length > 1}}"  class="zan-cell__bd zan-center text-orange" style="margin-top: 15px;margin-bottom:15px;color: #4ba0f2" url="my-mediating?title=qm">
+        您有<span style="color:red;">{{dblist.length}}</span>个待确认的签名，点击查看</navigator>
+    </view>
+      <navigator class="zan-cell" wx:if="{{ living }}" url="/pages/mediate/live?role={{ liveData.role }}&userid={{ liveData.userId }}&caseid={{ liveData.caseId }}&meetingid={{ liveData.meetingId }}">
+        <view class="zan-cell__bd zan-center text-orange">点击回到正在进行中的视频调解</view>
+      </navigator>
+    </view>
+
+    <view class="section">
+      <view class="section-caption">
+        <view class="section-title">服务内容</view>
+      </view>
+      <view class="content-padded" style="padding-top:0;">
+        <view class="grid grid-row shadow-light">
+          <view class="grid-item grid-caption shadow-light" @tap="navigateTo('', 'zixun')">
+            <!--<view class="grid-item grid-caption shadow-light">-->
+            <view class="grid-item__label">咨询服务</view>
+            <view class="grid-item__icon icon icon-renmintiaojie1"></view>
+            <!--<web-view src="http://yn.lvpin100.com/"></web-view>-->
+          </view>
+          <view class="grid grid-col">
+            <view class="grid grid-row">
+              <navigator wx:if="{{userInfo.isAuthenticate === 0 || userInfo.isFaceAuth === 0}}" class="grid-item" hover-class="button-hover"  url="/pages/user/real-name-authentication">
+               <image style="height: 25px;width: 30px;margin-bottom: 5px;margin-top: 7px;" src="/images/home/face.png"></image>
+                <view class="grid-item__label">实名认证</view>
+              </navigator>
+              <view class="grid-item" hover-class="button-hover" @tap="navigateTo('/pages/home/consult','1')">
+                <view class="grid-item__icon icon icon-rengongzixun"></view>
+                <view class="grid-item__label">人工咨询</view>
+              </view>
+              <view class="grid-item" hover-class="button-hover" @tap="navigateTo('', 'consult')">
+                <view class="grid-item__icon icon icon-zhinengbanan-"></view>
+                <view class="grid-item__label">智能咨询</view>
+              </view>
+            </view>
+            <view class="grid grid-row">
+              <view class="grid-item" hover-class="button-hover" @tap="navigateTo('', 'knowledge')">
+                <view class="grid-item__icon icon icon-falvshengming"></view>
+                <view class="grid-item__label">法律知识</view>
+              </view>
+              <view class="grid-item" hover-class="button-hover" @tap="navigateTo('', 'cases')">
+                <view class="grid-item__icon icon icon-wenshu-new" style="font-size:26px;line-height:30px;"></view>
+                <view class="grid-item__label">相关案例</view>
+              </view>
+              <view class="grid-item" hover-class="button-hover" @tap="navigateTo('/pages/home/flow')">
+                <view class="grid-item__icon icon icon-liucheng"></view>
+                <view class="grid-item__label">解纷流程</view>
+              </view>
+            </view>
+          </view>
+        </view><!-- /.grid -->
+        <view class="cell-group">
+          <view class="grid grid-row">
+
+            <view class="zan-cell" @tap="navigateTo('/pages/assessment/assessment-add?type=0')" style="display: none;">
+              <view class="zan-cell__icon"><view class="icon icon-pinggufuwu"></view></view>
+              <view class="zan-cell__bd">
+                <view class="zan-cell__text">评估服务</view>
+                <view class="zan-cell__desc">获得更全面、详细的深度咨询报告</view>
+              </view>
+              <view class="zan-cell__ft"></view>
+            </view>
+
+            <!--<navigator class="zan-cell" url="service?type=0">-->
+            <!--<view class="zan-cell__icon"><view class="icon icon-pinggufuwu"></view></view>-->
+            <!--<view class="zan-cell__bd">-->
+            <!--<view class="zan-cell__text">评估服务</view>-->
+            <!--<view class="zan-cell__desc">获得更全面、详细的深度咨询报告</view>-->
+            <!--</view>-->
+            <!--<view class="zan-cell__ft"></view>-->
+            <!--</navigator>-->
+
+            <view class="zan-cell" hover-class="button-hover" @tap="navigateTo('/pages/mediate/apply','1')">
+              <view class="zan-cell__icon"><view class="icon icon-tiaojiefuwu-new" style="font-size:22px;"></view></view>
+              <view class="zan-cell__bd">
+                <view class="zan-cell__text">调解服务</view>
+                <view class="zan-cell__desc">连接线上线下调解,调解和诉讼程序</view>
+              </view>
+              <view class="zan-cell__ft"></view>
+            </view>
+            <view class="zan-cell"  style="margin-left:10px;">
+              <!--<navigator class="zan-cell" url="service?type=1">-->
+              <image src="/images/sign/service.jpg" mode="aspectFill" style="width:100%;height:100%;" @error="onError"></image>
+              <!--<view class="zan-cell__icon"><view class="icon icon-zhongcaifuwu"></view></view>-->
+              <!--<view class="zan-cell__bd">-->
+              <!--<view class="zan-cell__text">仲裁服务</view>-->
+              <!--<view class="zan-cell__desc">在线参与仲裁全流程活动</view>-->
+              <!--</view>-->
+            </view>
+          </view>
+          <view class="grid grid-row">
+
+
+            <view class="zan-cell">
+            <!--<navigator class="zan-cell" url="/pages/user/test">-->
+              <view class="zan-cell__icon"><view class="icon icon-susongfuwu" style="background-color:#999;"></view></view>
+              <view class="zan-cell__bd">
+                <view class="zan-cell__text" style="color:#999">诉讼服务</view>
+                <view class="zan-cell__desc" style="margin-bottom: 30px">敬请期待</view>
+                <!--<view class="zan-cell__desc">可实现民事诉讼的在线立案、举证、质证等</view>-->
+              </view>
+            </view>
+            <!--</navigator>-->
+            <view class="zan-cell" style="margin-left:10px;" hover-class="button-hover" @tap="counters">
+              <!--<view class="zan-cell__icon"><view class="icon icon-susongfuwu" style="background-color:#999;"></view></view>-->
+              <!--<view class="zan-cell__bd">-->
+                <!--<view class="zan-cell__text" style="color:#999">有五个案件可直接进入视频</view>-->
+              <!--</view>-->
+              <!--<navigator class="zan-cell" url="service?type=1">-->
+              <!--<view class="zan-cell__icon"><view class="icon icon-zhongcaifuwu"></view></view>-->
+              <!--<view class="zan-cell__bd">-->
+              <!--<view class="zan-cell__text">仲裁服务</view>-->
+              <!--<view class="zan-cell__desc">在线参与仲裁全流程活动</view>-->
+              <!--</view>-->
+              <view class="zan-cell__icon"><view class="icon icon-plus" style=""></view></view>
+              <view class="zan-cell__bd">
+                <view class="zan-cell__text" style="color:#255787">辅助工具</view>
+                <!--<view class="zan-cell__desc">可实现民事诉讼的在线立案、举证、质证等</view>-->
+              </view>
+            </view>
+            <!--<navigator class="zan-cell" style="margin-left:10px;" url="service?type=2">-->
+            <!--<view class="zan-cell__icon"><view class="icon icon-susongfuwu"></view></view>-->
+            <!--<view class="zan-cell__bd">-->
+            <!--<view class="zan-cell__text">诉讼服务</view>-->
+            <!--<view class="zan-cell__desc">可实现民事诉讼的在线立案、举证、质证等</view>-->
+            <!--</view>-->
+            <!--</navigator>-->
+          </view>
+        </view>
+      </view>
+    </view><!-- /.section -->
+
+    <view class="section">
+      <view class="section-caption">
+        <view class="section-title">服务资源</view>
+      </view>
+      <view class="content-padded" style="padding-top:0;">
+        <view class="content-padded">
+          <view class="grid grid-row resources">
+            <navigator class="grid-item grid grid-col gborder" url="/pages/resources/consultant">
+              <view class="grid-item__label">咨询师</view>
+              <view class="grid-item__decimal text-orange">{{ resources.counselor || 0 }}</view>
+            </navigator>
+            <navigator class="grid-item grid grid-col gborder" url="/pages/resources/mediator">
+              <view class="grid-item__label">调解员</view>
+              <view class="grid-item__decimal text-orange">{{ resources.mediator || 0 }}</view>
+            </navigator>
+            <!--<navigator class="grid-item grid grid-col gborder" url="/pages/resources/arbitration">-->
+              <!--<view class="grid-item__label">仲裁机构</view>-->
+              <!--<view class="grid-item__decimal text-orange">{{ resources.arbitration || 0 }}</view>-->
+            <!--</navigator>-->
+            <navigator class="grid-item grid grid-col" url="/pages/resources/court">
+              <view class="grid-item__label">法院</view>
+              <view class="grid-item__decimal text-orange">{{ resources.court || 0 }}</view>
+            </navigator>
+          </view>
+        </view>
+      </view>
+    </view><!-- /.section -->
+
+    <!--<view class="footer">—— 技术支持：在线矛盾纠纷多元化解平台 ——</view>-->
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {HOST} from '@/utils/constants'
+import {getHomeData, getResourceCount, getTvList} from '@/api/home'
+import {hasToken, getUserInfo, getWxUserInfo, getLiveData} from '@/utils/utils'
+import {getLawCaseProgress} from '@/api/user'
+
+export default class Home extends wepy.page {
+  config = {
+    navigationBarTitleText: '首页',
+    navigationBarTextStyle: 'black',
+    navigationBarBackgroundColor: '#ffffff'
+  }
+
+  data = {
+    hasToken: false,
+    userInfo: null,
+    wxUserInfo: null,
+    count: 0,
+    resources: {},
+    liveData: null,
+    timestamp: 0,
+    imgerror: false,
+    nodata: null,
+    nomore: null,
+    list: [],
+    listo: [],
+    listt: {},
+    items: null,
+    hllist: [],
+    qmlist: [],
+    dblist: [],
+    loading: false,
+  }
+
+  computed = {
+    avatarUrl() {
+      // 服务器返回的用户头像
+      // 更新用户信息
+      this.userInfo = getUserInfo()
+      let data = this.userInfo
+      if (data && data.avatarUrl && !this.imgerror) {
+        if (data.avatarUrl.indexOf('?') > 0) {
+          return data.avatarUrl
+        }
+
+        return `${data.avatarUrl}?_=${this.timestamp}`
+      }
+
+      if (this.imgerror) {
+        return '/images/sign/avatar_default.png'
+      }
+
+      // 微信头像
+      data = this.wxUserInfo
+      if (data && data.avatarUrl) {
+        return data.avatarUrl
+      }
+
+      // 默认头像
+      return '/images/sign/avatar_default.png'
+    },
+    nickName() {
+      let data = this.userInfo
+      if (data) {
+        if (data.actualName) {
+          return data.actualName
+        }
+
+        if (data.name) {
+          return data.name
+        }
+      }
+
+      data = this.wxUserInfo
+
+      if (data && data.nickName) {
+        return data.nickName
+      }
+
+      return ''
+    },
+    living() {
+      return this.liveData && Object.keys(this.liveData).length > 0 && this.liveData.statusName === '正在调解'
+    }
+  }
+
+  onPullup() {
+    // 若没有数据，或已加载完，或正在加载，则不做处理
+    // if (this.nodata || this.nomore || this.loading) return
+    // 开启加载状态
+    this.listo = []
+    this.listt = []
+    this.list = []
+    this.dblist = []
+    this.status = '正在调解'
+    this.loading = true
+    getTvList()
+      .then((data = {}) => {
+        // 关闭加载状态
+        // wx.hideNavigationBarLoading()
+        // // 将返回的数据追加到list中
+        this.list = this.list.concat(this.transform(data || []))
+        if (this.list.length > 1) {
+          for (let i = 0; i < this.list.length - 1; i++) {
+            this.listo.push(this.list[i])
+          }
+        }
+        this.qmlist = this.list[this.list.length - 1]
+        this.listt = this.qmlist.lawCaseProgress
+        this.listt.forEach(item => {
+          if (item.isconfirm === true) {
+            this.dblist.push(item)
+          }
+        })
+        this.loading = false
+        // console.log(this.dblist)
+        this.$apply()
+      })
+      .catch(e => {
+        // 关闭加载状态
+        this.loading = false
+        this.$apply()
+      })
+  }
+  getList(id) {
+    getLawCaseProgress({
+      lawCaseId: id
+    }).then((data = {}) => {
+      // console.log(data)
+      let lists = data.lawCaseProgress || []
+      lists.forEach(item => {
+        let code = item.statusCode
+        switch (code) {
+        case '40':
+          this.hllist = item
+          break
+        case '41':
+          this.hllist = item
+          break
+        case '44':
+          this.qmlist = item
+          break
+        case 44:
+          this.qmlist = item
+          break
+        case '93':
+          this.qmlist = item
+          break
+        }
+      })
+      this.$apply()
+    })
+    .catch()
+  }
+  times (val) {
+    let date = new Date(val)
+    let Y = date.getFullYear() + '-'
+    let M = (date.getMonth() + 1 < 10 ? '0' + (date.getMonth() + 1) : date.getMonth() + 1) + '-'
+    let D = date.getDate() + ' '
+    let h = date.getHours() + ':'
+    let m = date.getMinutes() + ':'
+    let s = date.getSeconds()
+    return Y + M + D + h + m + s
+  }
+
+  transform(list = []) {
+    return list.map(item => {
+      let date = ''
+      item.date = date
+
+      return item
+    })
+  }
+  methods = {
+    onError() {
+      this.imgerror = true
+      this.$apply()
+      console.log(this.imgerror)
+    },
+    openApp() {
+      wx.navigateToMiniProgram({
+        appId: 'wx42db51f265623168', // 要跳转的小程序的appid
+        extarData: {
+          open: 'auth'
+        },
+        success(res) {
+          // 打开成功
+        },
+        fail(erro) {
+          console.log(erro)
+        }
+      })
+    },
+    // 跳转页面  type为1 需要实名认证
+    navigateTo(url, type) {
+      // 智能咨询无需校验登录
+      if (type === 'consult') {
+        // url = encodeURIComponent(`${HOST}jsp/session/auto_session_mobile.jsp`)
+        // // return wx.navigateTo({url: `/pages/webview/webview?url=${url}`})
+        // return wx.navigateTo({url: `/pages/intelligentConsult/intelligentConsult`})
+        url = `https://yn.lvpin100.com?app_type=2`
+        return wx.navigateTo({url: '/pages/webview/webview?url=' + url})
+      }
+      if (type === 'zixun') {
+        url = `https://yn.lvpin100.com?app_type=2`
+        return wx.navigateTo({url: '/pages/webview/webview?url=' + url})
+      }
+
+      // 判断是否有登录
+      if (!this.hasToken) {
+        this.updateToken()
+      }
+      // 若没有登录，跳转到登录页面
+      if (this.hasToken) {
+        switch (type) {
+        case '1': // 实名认证校验
+          if (this.userInfo.isAuthenticate === 0 || this.userInfo.isFaceAuth === 0) {
+            return wx.showModal({
+              content: '您还未进行身份认证',
+              showCancel: false,
+              success: () => {
+                wx.navigateTo({url: '/pages/user/real-name-authentication'})
+              }
+            })
+          }
+          break
+        case 'knowledge': // 法律知识
+          url = encodeURIComponent(`${HOST}mobileSearch/page/flfg?id=${this.userInfo.id}`)
+          url = `/pages/webview/webview?url=${url}`
+          break
+        case 'cases': // 相关案例
+          url = encodeURIComponent(`${HOST}mobileSearch/page/dxal?id=${this.userInfo.id}`)
+          url = `/pages/webview/webview?url=${url}`
+          break
+        }
+      } else {
+        url = '/pages/sign/signin'
+      }
+
+      wx.navigateTo({url})
+    },
+
+    //计算器
+    counters(){
+      //console.log(0)
+      wx.navigateTo({
+        url:'/pages/webview/counter'
+      })
+    },
+
+  }
+
+  watch = {
+    hasToken(newVal, oldVal) {
+      this.onTokenChange()
+    },
+  }
+
+  fetchData() {
+    wx.showNavigationBarLoading()
+    getHomeData({}, () => false)
+    .then((data = {}) => {
+      // console.log(data)
+      const {
+        disputeNum = 0,
+        consultNum = 0
+        // evalauteNum = 0
+      } = data
+
+      // this.count = disputeNum + consultNum + evalauteNum
+      this.count = disputeNum + consultNum
+
+      this.$apply()
+      wx.hideNavigationBarLoading()
+
+      this.updateToken()
+    })
+    .catch(e => {
+      wx.hideNavigationBarLoading()
+      this.updateToken()
+    })
+  }
+
+  // token改变
+  onTokenChange() {
+    // 已登录
+    if (this.hasToken) {
+      // 更新用户信息
+      this.userInfo = getUserInfo()
+      // 更新会议状态
+      this.liveData = getLiveData()
+      this.$apply()
+
+    } else {
+      // 未登录，清空用户信息
+      this.userInfo = null
+      // 清空会议状态
+      this.liveData = null
+      this.$apply()
+    }
+  }
+
+  onLoad() {
+    this.timestamp = Date.now()
+    getResourceCount()
+    // this.onPullup()
+    .then((data = {}) => {
+      // console.log(data)
+      this.resources = data
+      this.$apply()
+    })
+    // 更新类型信息
+    setTimeout(() => {
+      this.updateToken()
+    }, 300)
+  }
+
+  // 更新token
+  updateToken() {
+    // 更新登录状态
+    this.hasToken = hasToken()
+    this.$apply()
+  }
+
+  onShow() {
+    this.updateToken()
+    this.fetchData()
+    if (this.hasToken) {
+      this.onPullup()
+    }
+    // 获取微信用户信息
+    if (!this.wxUserInfo) {
+      getWxUserInfo().then((info = {}) => {
+        this.wxUserInfo = {...info}
+        this.$apply()
+      })
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables';
+
+.banner {
+  height: 160px;
+
+  > image {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.user-bar {
+  position: relative;
+  margin: 20px;
+  margin-top: -28px;
+  overflow: hidden;
+  background-color: $white;
+  border-radius: 7px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+
+  .zan-cell {
+    &::after {
+      left: 10px;
+      right: 10px;
+      width: auto;
+      transform: scaleY(0.5);
+    }
+  }
+
+  .inner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    .nick-name {
+      flex: 1;
+      overflow: hidden;
+    }
+  }
+
+  .avatar {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    image{
+      display: block;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+  }
+}
+
+.section {
+  background-color: $white;
+}
+
+.section-title {
+  font-style: italic;
+}
+
+.content-padded {
+  padding: 10px;
+}
+
+.shadow-light {
+  box-shadow: 0 2px 5px rgba(125, 125, 125, .25);
+}
+
+.grid {
+  display: flex;
+
+  &.grid-row {
+    flex-direction: row;
+  }
+
+  &.grid-col {
+    flex-direction: column;
+  }
+}
+
+.grid-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  text-align: center;
+  color: $primary-color;
+  border: 1rpx solid $border-color;
+  box-sizing: border-box;
+
+  .grid-item__label {
+    white-space: nowrap;
+  }
+  .grid-item__icon {
+    margin: 5px;
+    font-size: 30px;
+    line-height: 1;
+  }
+}
+
+.grid-caption {
+  padding: 5px;
+  color: $white;
+  background-color: $primary-color;
+
+  .grid-item__icon {
+    font-size: 70px;
+    font-weight: normal;
+    margin-top: 20px;
+  }
+
+  & + .grid, & ~ .grid {
+    flex: 4;
+  }
+}
+
+.cell-group {
+  .zan-cell {
+    margin-top: 10px;
+    padding: 10px 12px;
+    color: $primary-color;
+    border: 1rpx solid $border-color;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+
+    &::after {
+      display: none;
+    }
+  }
+
+  .grid .zan-cell {
+    flex: 1;
+  }
+
+  .zan-cell__icon .icon {
+    width: 34px;
+    height: 34px;
+    font-size: 24px;
+    line-height: 34px;
+    margin-right: 5px;
+    color: $white;
+    text-align: center;
+    background-color: $primary-color;
+    border-radius: 50%;
+  }
+
+  .zan-cell__desc {
+    color: $gray-dark;
+  }
+  }
+
+  .resources {
+  .grid-item {
+    padding: 0;
+    line-height: 1;
+    border: none;
+
+  // & + .grid-item {
+       //   border-left: 1rpx solid $border-color;
+       // }
+  }
+
+  .grid-item__decimal {
+    margin-top: 10px;
+  }
+  }
+
+  .footer {
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: $gray-dark;
+    text-align: center;
+  }
+  .resources .gborder {
+    border-right: 1rpx solid $border-color;
+  }
+</style>

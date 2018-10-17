@@ -1,0 +1,58 @@
+<template>
+  <view class="container">
+    <image src="{{ url }}" mode="aspectFit" style="width:{{ width }};height:{{ height }};" @load="onload" @tap="handleClick"></image>
+    <!--<image src="{{ url }}" mode="aspectFit" style="width:100%;" @load="onload" @tap="handleClick"></image>-->
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+
+const URL = 'https://odrcloud.net/wechat/disputeResolutionProcess.jpg'
+
+export default class Flow extends wepy.page {
+  config = {
+    navigationBarTitleText: '解纷流程'
+  }
+
+  data = {
+    url: URL,
+    windowWidth: 0,
+    imgWidth: 0,
+    imgHeight: 0
+  }
+
+  computed = {
+    width() {
+      return this.windowWidth + 'px'
+    },
+    height() {
+      if (this.imgWidth) {
+        return (this.windowWidth / this.imgWidth) * this.imgHeight + 'px'
+      }
+
+      return 0
+    }
+  }
+
+  methods = {
+    onload({detail}) {
+      const {width, height} = detail
+
+      this.imgWidth = width
+      this.imgHeight = height
+    },
+    handleClick() {
+      wx.previewImage({urls: [URL]})
+    }
+  }
+
+  onLoad() {
+    wx.getSystemInfo({
+      success: ({windowWidth}) => {
+        this.windowWidth = windowWidth
+      }
+    })
+  }
+}
+</script>

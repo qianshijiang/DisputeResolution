@@ -1,0 +1,1649 @@
+<template>
+  <view class="live-container zan-row {{ 'live-item' + count }}">
+    <block wx:for="{{ list }}" wx:key="index">
+      <view class="live-box" wx:if="{{item.isShow}}">
+        <view class="live-item {{ index % 2 ? 'child-odd' : '' }}">
+          <view class="live-video">
+            <block wx:if="{{ item.current}}">
+              <live-pusher
+                wx:if="{{ item.pushURL}}"
+                autopush
+                url="{{ item.pushURL }}"
+                mode="RTC"
+                class="live-player"
+                aspect="{{ config.aspect }}"
+                min-bitrate="{{ config.minBitrate }}"
+                max-bitrate="{{ config.maxBitrate }}"
+                audio-quality="high"
+                beauty="{{ config.beauty }}"
+                muted="{{ item.muted }}"
+                background-mute="{{ config.backgroundMute }}"
+                debug="{{ config.debug }}"
+                enable-camera="{{ item.enableCamera }}"
+                @statechange="handlePushStateChange"
+                @error="handlePuserError"
+                >
+                <cover-view style="display: {{ item.pushURL && !item.enableCamera ? 'block' : 'none'}}" class="cover-view">
+                  <cover-image class="cover-image" src="/images/mediate/camera_disabled.png"></cover-image>
+                </cover-view>
+                <!-- 视频操作按钮区域 -->
+                <cover-view wx:if="{{ role === 60 || item.current }}" class="btn-box">
+                  <cover-image @tap="handleChange({{ index }})" class="btn-img" src="{{ item.muted ? '/images/mediate/vioce_close.png' : '/images/mediate/vioce.png'}}"></cover-image>
+                  <cover-image @tap="handleChange({{ index }})" class="btn-img" src="{{ item.enableCamera ? '/images/mediate/video.png' : '/images/mediate/video_close.png'}}"></cover-image>
+                </cover-view>
+                <cover-view wx:if="{{ (role == 60 && item.role.code != role) || ( role != 60 && item.role.code == 60 ) }}" class="session-btn">
+                  <cover-image @tap="goMessage({{ item.personnelId }})" class="session-img" src="/images/mediate/siliao.png"></cover-image>
+                  <cover-image wx:if="{{item.isMsg}}" class="session-img-count" src="/images/mediate/count.png"></cover-image>
+                </cover-view>
+                <!-- 用户信息按钮 -->
+                <cover-view class="role-name">
+                  {{ item.role.code == 10 ||  item.role.code == 12 || item.role.code == 13 ? '申请人' : '' }}{{ item.role.code == 20 || item.role.code == 22 || item.role.code == 23 ? '被申请人' : '' }}{{item.role.code == 40 || item.role.code == 41 ? '申请人(代)' : ''}}{{item.role.code == 46 || item.role.code == 47 ? '被申请人(代)' : ''}}{{item.role.code == 60 ? '调解员' : ''}}{{item.role.code == 61 ? '协助调解员' : ''}}{{item.role.code == 70 ? '观察人员' : ''}}：{{ item.actualName }}
+                </cover-view>
+              </live-pusher>
+            </block>
+            <block wx:if="{{ !item.current}}">
+              <live-player
+                wx:if="{{ item.playerURL }}"
+                autoplay
+                src="{{ item.playerURL }}"
+                mode="RTC"
+                class="live-player"
+                object-fit="fillCrop"
+                min-cache="0.1"
+                max-cache="0.3"
+                muted="{{ item.muted }}"
+                background-mute="{{ config.backgroundMute }}"
+                debug="{{ config.debug }}"
+                @statechange="handleStateChange({{index}})"
+              >
+                <cover-view style="display: {{ item.playerURL && !item.enableCamera ? 'block' : 'none'}}" class="cover-view">
+                  <cover-image class="cover-image" src="/images/mediate/camera_disabled.png"></cover-image>
+                </cover-view>
+                <!-- 视频操作按钮区域 -->
+                <cover-view wx:if="{{ role === 60 || item.current }}" class="btn-box">
+                  <cover-image @tap="handleChange({{ index }})" class="btn-img" src="{{ item.muted ? '/images/mediate/vioce_close.png' : '/images/mediate/vioce.png'}}"></cover-image>
+                  <cover-image @tap="handleChange({{ index }})" class="btn-img" src="{{ item.enableCamera ? '/images/mediate/video.png' : '/images/mediate/video_close.png'}}"></cover-image>
+                </cover-view>
+                <cover-view wx:if="{{ (role == 60 && item.role.code != role) || ( role != 60 && item.role.code == 60 ) }}" class="session-btn">
+                  <cover-image @tap="goMessage({{ item.personnelId }})" class="session-img" src="/images/mediate/siliao.png"></cover-image>
+                  <cover-image  wx:if="{{item.isMsg}}" class="session-img-count" src="/images/mediate/count.png"></cover-image>
+                </cover-view>
+                <!-- 用户信息按钮 -->
+                <cover-view class="role-name">
+                  {{ item.role.code == 10 ||  item.role.code == 12 || item.role.code == 13 ? '申请人' : '' }}{{ item.role.code == 20 || item.role.code == 22 || item.role.code == 23 ? '被申请人' : '' }}{{item.role.code == 40 || item.role.code == 41 ? '申请人(代)' : ''}}{{item.role.code == 46 || item.role.code == 47 ? '被申请人(代)' : ''}}{{item.role.code == 60 ? '调解员' : ''}}{{item.role.code == 61 ? '协助调解员' : ''}}{{item.role.code == 70 ? '观察人员' : ''}}：{{ item.actualName }}
+                </cover-view>
+              </live-player>
+              <view wx:else class="live-placeholder">
+                <view class="live-placeholder__icon icon {{ item.leaved ? 'icon-jinyong' : 'icon-dengdai' }}"></view>
+                <view class="live-placeholder__text">{{ item.leaved ? '已退出' : '等待加入' }}</view>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+  <view wx:if="{{ role === 60 }}" class="invitation-box" @tap="handleInvite">
+    <image src="/images/mediate/yaoqing.png"></image>
+    <view class="toolbar-item__text">邀 请</view>
+  </view>
+  <block wx:if="{{ list.length }}">
+    <view class="toolbar">
+
+      <view class="toolbar-item {{role === 71? 'disabledColor': ''}}" @tap="publicChat">
+        <image src="/images/mediate/tiaojie.png"></image>
+        <text wx:if="{{ hasPublicChat }}" class="zan-badge-count"></text>
+        <view class="toolbar-item__text">调解笔录</view>
+      </view>
+
+      <view wx:if="{{ !control }}" class="toolbar-item {{role === 71? 'disabledColor': ''}}" @tap="caseMaterial">
+        <image src="/images/mediate/jiufen.png"></image>
+        <view class="toolbar-item__text">纠纷材料</view>
+      </view>
+
+      <view wx:if="{{ !control }}" class="toolbar-item {{role === 71? 'disabledColor': ''}}" @tap="showActionSheet">
+        <image src="/images/mediate/wenshu.png"></image>
+        <text wx:if="{{ hasText && role !== 71 }}" class="zan-badge-count"></text>
+        <view class="toolbar-item__text">文 书</view>
+      </view>
+
+      <view wx:if="{{ control }}" class="toolbar-item {{role === 61? 'disabledColor': ''}}" @tap="handleStartRecord">
+        <image src="{{ isRecord ? '/images/mediate/video_on.png' : '/images/mediate/video_off.png'}}"></image>
+        <view class="toolbar-item__text">{{!isRecord ? '开始录制' : '停止录制'}}</view>
+      </view>
+
+      <view wx:if="{{ control }}" class="toolbar-item  {{role === 61? 'disabledColor': ''}}" @tap="handleStartIdentify">
+        <image src="{{ isIdentify ? '/images/mediate/vioce_on.png' : '/images/mediate/vioce_off.png'}}"></image>
+        <view class="toolbar-item__text">{{!isIdentify ? '语音识别' : '停止识别'}}</view>
+      </view>
+
+      <view class="toolbar-item {{role === 71? 'disabledColor': ''}}"  @tap="handleSwitchCamera">
+        <image src="/images/mediate/flip.png"></image>
+        <view class="toolbar-item__text">翻 转</view>
+      </view>
+    </view>
+
+  </block>
+  <block wx:if="{{ notify && role != 60}}">
+    <cover-view class="notify">
+      <cover-view class="main">
+        <cover-view class="title">权利义务告知书</cover-view>
+        <cover-view class="content">
+          <cover-view class="text"> 一、当事人权利 \r\n 在调解活动中，纠纷当事人享有下列权利: \r\n 1.自主决定接受、不接受或者终止调解；\r\n 2.要求有关调解人员回避；\r\n 3.不受压制强迫，表达真实意愿，提出合理要求；\r\n 4.自愿达成调解协议。\r\n\r\n 二、当事人义务\r\n 在调解活动中，纠纷当事人承担下列义务：\r\n 1.如实陈述纠纷事实，不得提供虚假证明材料\r\n 2.遵守调解规则；\r\n 3.不得加剧纠纷，激化矛盾；\r\n 4.自觉履行人民调解协议。
+          </cover-view>
+          <cover-view class="btn" @tap="closeNotify">确定</cover-view>
+        </cover-view>
+      </cover-view>
+    </cover-view>
+  </block>
+</template>
+
+<script>
+import wepy from 'wepy'
+import ZanEvent from '@/utils/event'
+import StoreFactory from '@/utils/store'
+import ZanLoadmore from '@/components/zan-loadmore'
+import {getItemSync, setItem} from '@/utils/storage'
+import {SOCKET_URL} from '@/utils/constants'
+import {getMeetingData, documentItemList, sendMessage} from '@/api/mediate'
+import {wxAuthorize, openSetting, getQueryString} from '@/utils/utils'
+
+const store = StoreFactory.getStore('liveEvent')
+store.set('chatEvent', ZanEvent)
+// 私聊
+let onSendMessage = null
+ZanEvent.on('sendMessage', data => {
+  onSendMessage && onSendMessage(data)
+})
+
+// 公共聊天框
+let onSendPublicMessage = null
+ZanEvent.on('sendPublicMessage', data => {
+  onSendPublicMessage && onSendPublicMessage(data)
+})
+
+// 语音转文字 引入插件
+var plugin = requirePlugin('WechatSI')
+// 定义方法
+var manager = null
+
+// 角色类型定义
+const ROLE = {
+  DEMANDANT: 10, // 申请人
+  DEFENDANT: 20, // 被申请人
+  DEMANDANT_AGENT: 40, // 申请人代理人
+  DEMANDANT_SPECIAL_AGENT: 41, // 申请人特别代理人
+  DEFENDANT_AGENT: 46, // 被申请人代理人
+  DEFENDANT_SPECIAL_AGENT: 47, // 被申请人特别代理人
+  MEDIATOR: 60, // 调解员
+  ASSISTMEDIATOR: 61, // 协助调解员
+  VISITOR: 71 // 观察人员
+}
+
+// 事件类型定义
+const EVENTS = {
+  ROLE: 'role', // 离开房间
+  HEART: 'heartbeat', // 心跳
+  ONHIDE: 'onHide', // 进入后台
+  ONSHOW: 'onShow', // 进入前台
+  GETPUSH: 'getPush', // 进入房间
+  MISSCHAT: 'missChat', // 调解员私聊
+  STARTMIXRECORD: 'startMixRecord', // 调解员开始录制视频
+  STOPMIXRECORD: 'stopMixRecord', // 调解员结束录制视频
+  OPENSPEECH: 'openSpeech', // 调解员语音转文字开启
+  CLOSESPEECH: 'closeSpeech', // 调解员语音转文字关闭
+  GETCHATMSG: 'getChatMsg', // 有新消息
+  OPENVOICE: 'openVioce', // 开启音频
+  CLOSEVOICE: 'closeVioce', // 关闭音频
+  OPENVIDEO: 'openVideo', // 开启视频
+  CLOSEVIDEO: 'closeVideo', // 关闭视频
+  MIXSTREAM: 'mixStream', // 开始录制的返回
+  STOPMIXSTREAM: 'stopMixStream', // 关闭录制的返回
+  ISMIXSTREAM: 'isMixStream', // 是否已经开始录制 200是  500否
+  SPEECHSTATUSCHANGE: 'speechStatusChange', // 是否开启语音转文字，真开启，假关闭
+  DOCUMENT: 'document',
+  CHANGE: 'memberChange',
+  REDUCE: 'memberReduce'
+}
+
+const showAlert = (msg) => {
+  return new Promise((resolve, reject) => {
+    wx.showModal({
+      title: '提示',
+      content: msg,
+      showCancel: false,
+      complete: resolve
+    })
+  })
+}
+
+// 废弃使用
+// const trim = (s = '') => {
+//   return s.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '')
+// }
+
+let HEART_TIMER = null
+let onSocketOpen, onSocketMessage, onSocketClose, onSocketError
+
+wx.onSocketOpen(data => onSocketOpen && onSocketOpen(data))
+wx.onSocketMessage(data => onSocketMessage && onSocketMessage(data))
+wx.onSocketClose(data => onSocketClose && onSocketClose(data))
+wx.onSocketError(data => onSocketError && onSocketError(data))
+
+export default class Live extends wepy.page {
+  config = {
+    navigationBarTitleText: '视频调解'
+  }
+
+  data = {
+    audioAuthority: true,
+    videoAuthority: true,
+    hasAssist: false,
+    notify: true,
+    isRecord: false,
+    isIdentify: false,
+    actualName: '',
+    roleName: '',
+    role: '',
+    caseId: '',
+    meetingId: '',
+    sessionId: '',
+    scrollTop: 0,
+    connected: false,
+    authorized: false,
+    socketRequest: 0,
+    list: [],
+    // live-pusher 对应的配置项
+    config: {
+      aspect: '3:4', // 设置画面比例，取值为'3:4'或者'9:16'
+      minBitrate: 200, // 设 置码率范围为[minBitrate,maxBitrate]，四人建议设置为200~400
+      maxBitrate: 400,
+      beauty: 5, // 美颜程度，取值为0~9,
+      backgroundMute: false, // 进入后台时是否静音
+      debug: false // 是否显示log
+    },
+    livePushContext: null,
+    msg: '',
+    hasBadge: false,
+    hasText: false,
+    loaded: false,
+    noMore: false,
+    loading: false,
+    messages: [],
+    pusher: {},
+    platform: '',
+    actionSheetList: [],
+    // 当前房间基本信息
+    sdkAppId: '',
+    roomId: '',
+    userId: '',
+    userSig: '',
+    roomSig: '',
+    paramData: '',
+    privMapEncrypt: '',
+    // 获取加入房间人员信息
+    userList: [],
+    // 当前房间加入的拉流地址列表
+    playerList: [],
+    // 私聊时传递的本身的id
+    personnelId: '',
+    sessionIdList: '',
+    // 公共聊天框是否有新消息
+    hasPublicChat: false,
+    // 当前页面视频在线的人数
+    count: 0
+  }
+
+  components = {
+    'zan-loadmore': ZanLoadmore
+  }
+
+  computed = {
+    disabled() {
+      return !this.msg
+    },
+    control() {
+      return this.role === ROLE.MEDIATOR || this.role === ROLE.ASSISTMEDIATOR
+    },
+    mediatorId() {
+      const item = this.list.find(({roleCode}) => roleCode === ROLE.MEDIATOR)
+
+      if (item) {
+        return item.id
+      }
+
+      return ''
+    }
+  }
+
+  watch = {
+    list(list = []) {
+      this.count = 0
+      list.forEach(item => {
+        if (item.isShow) {
+          this.count++
+        }
+      })
+    },
+    connected(val) {
+      // 屏幕常亮
+      wx.setKeepScreenOn({keepScreenOn: val})
+    },
+    actionSheetList(newVal, oldVal) {
+      if (oldVal.length < newVal.length) {
+        this.hasText = true
+      } else {
+        this.hasText = false
+      }
+    }
+  }
+
+  methods = {
+    showActionSheet() {
+      if (this.role === ROLE.MEDIATOR || this.role === ROLE.ASSISTMEDIATOR || this.role === ROLE.VISITOR) {
+        return false
+      }
+      // 特别代理人接口预留，后期做特别代理人权限处理
+      // if (this.role === ROLE.DEFENDANT_AGENT || this.role === ROLE.DEMANDANT_AGENT) {
+      //   wx.showToast({title: '您不是特别代理人，无法查看文书', icon: 'none'})
+      //   return false
+      // }
+      this.hasText = false
+      if (this.actionSheetList.length) {
+        const btnList = this.actionSheetList.map(({documentName}) => {
+          return documentName
+        })
+        wx.showActionSheet({
+          itemList: btnList,
+          success: ({tapIndex}) => {
+            console.log(tapIndex)
+            const documentType = this.actionSheetList[tapIndex].documentType
+            console.log(documentType)
+            let code = ''
+            switch (documentType) {
+            case 1: // 调解协议书
+              code = '56'
+              break
+            case 2: // 调解笔录
+              code = '44'
+              break
+            case 3: // 调查笔录
+              code = '44'
+              break
+            case 5: // 无争议事实
+              code = '81'
+              break
+            case 6: // 司法确认申请书
+              code = '93'
+              break
+            case 8: // 无异议调解方案
+              code = '87'
+              break
+            case 10: // 调解申请书
+              code = '62'
+              break
+            }
+            if (code === '62') {
+              wx.navigateTo({
+                url: `/pages/mediate/applicationBook?caseid=${this.caseId}&meetingid=${this.meetingId}&code=${code}`
+              })
+            } else {
+              wx.navigateTo({
+                url: `/pages/mediate/document?caseid=${this.caseId}&meetingid=${this.meetingId}&code=${code}`
+              })
+            }
+          }
+        })
+      } else {
+        wx.showToast({title: '暂无最新文书', icon: 'none', duration: 3e3})
+      }
+    },
+    publicChat() {
+      this.hasPublicChat = false
+      wx.navigateTo({
+        url: `/pages/mediate/publicChat?lawMeettingId=${this.meetingId}&personnelId=${this.personnelId}&roleName=${this.roleName}&actualName=${this.actualName}`
+      })
+    },
+    goMessage(personnelId) {
+      if (this.role !== ROLE.VISITOR) {
+        // 判断当前用户身份
+        if (this.role === 60) {
+          this.sessionIdList.forEach(item => {
+            if (item.personnel.id === personnelId) {
+              this.sessionId = item.id
+            }
+          })
+        } else {
+          this.sessionId = this.sessionIdList.id
+        }
+        // 消息红点处理点击谁就将该人物的消息红点消失
+        this.list.forEach(item => {
+          if (item.personnelId === personnelId) {
+            item.isMsg = false
+          }
+        })
+        wx.navigateTo({
+          url: `chat?userid=${this.personnelId}&sessionid=${this.sessionId}&priChatTo=${personnelId}`
+        })
+      }
+    },
+    caseMaterial() {
+      if (this.role !== ROLE.VISITOR) {
+        wx.navigateTo({
+          url: `material?caseid=${this.caseId}&back=1`
+        })
+      }
+    },
+    closeNotify() {
+      this.notify = false
+      this.fetchList()
+    },
+    // 录制视频操作
+    handleStartRecord() {
+      if (this.role === ROLE.MEDIATOR) {
+        if (!this.isRecord) {
+          // 开启录制
+          this.sendSocketMessage(EVENTS.STARTMIXRECORD)
+        } else {
+          // 停止录制
+          this.sendSocketMessage(EVENTS.STOPMIXRECORD)
+        }
+      }
+    },
+    // 语音识别
+    handleStartIdentify() {
+      if (this.role === ROLE.MEDIATOR) {
+        if (!this.isIdentify) {
+          // 开启语音转文字
+          this.sendSocketMessage(EVENTS.OPENSPEECH)
+        } else {
+          // 关闭语音转文字
+          this.sendSocketMessage(EVENTS.CLOSESPEECH)
+        }
+      }
+    },
+    handleInvite() {
+      if (this.role === ROLE.MEDIATOR) {
+        wx.navigateTo({
+          url: `invite?meetingid=${this.meetingId}`
+        })
+      }
+    },
+    handleWorkbench() {
+      wx.showActionSheet({
+        itemList: ['调解笔录', '调解协议'],
+        success: ({tapIndex}) => {
+          const url = ['record', 'protocol'][tapIndex]
+
+          wx.navigateTo({
+            url: `${url}?caseid=${this.caseId}&meetingid=${this.meetingId}`
+          })
+        }
+      })
+    },
+    handleStateChange(index, e) {
+      console.log(`live-player ${index} code: ${e.detail.code}`)
+    },
+    handlePushStateChange(e) {
+      if (e.detail.code === 1020) {
+        console.log(e)
+        // 当前房间拉流的地址信息列表
+        this.playerList = JSON.parse(e.detail.message).userlist
+        // 进行拉流处理,从腾讯获取当前房间所存在的其他人员信息
+        this.setVideo()
+      }
+      if (e.detail.code === -1307) {
+        wx.showModal({
+          content: '网络连接断开，请退出重新进入',
+          showCancel: false,
+          success: function({confirm}) {
+            if (confirm) {
+              wx.navigateBack({
+                delta: 1
+              })
+            }
+          }
+        })
+      }
+    },
+    handlePuserError(e) {
+      console.log(e)
+    },
+    // // 调解员触发视频保存
+    // handleSaveVioce() {
+    //   this.sendSocketMessage(EVENTS.STARTMIXRECORD)
+    // },
+    // 用户筛选视频或则音频的操作
+    handleChange(index) {
+      const item = this.list[index]
+      let _this = this
+      wx.showActionSheet({
+        itemList: [item.enableCamera ? '关闭视频' : '开启视频', item.muted ? '开启音频' : '关闭音频'],
+        success: function(res) {
+          console.log(res)
+          if (res.tapIndex === 0) {
+            _this.handleChangeCamera(index)
+          } else if (res.tapIndex === 1) {
+            _this.handleChangeMute(index)
+          }
+        },
+        fail: function(res) {
+          console.log(res.errMsg)
+        }
+      })
+    },
+    // 切换摄像头
+    handleSwitchCamera() {
+      if (this.role !== ROLE.VISITOR) {
+        if (this.livePushContext) {
+          this.livePushContext.switchCamera({
+            success: (res) => {
+              console.log(res)
+            }
+          })
+        }
+      }
+    },
+    // handleInput({detail}) {
+    //   this.msg = trim(detail.value)
+    // },
+    // handleSend(e) {
+    //   if (this.role === ROLE.VISITOR) {
+    //     this.msg = ''
+    //     wx.showToast({title: '观摩人员无法发送消息', icon: 'none'})
+    //   } else {
+    //     this.sendMessage()
+    //     this.msg = ''
+    //   }
+    // },
+    // handleScroll(e) {
+    //   this.scrollTop = e.detail.scrollTop
+    // },
+    // scrollToUpper() {
+    //   this.fetchHistoryMsg()
+    // }
+  }
+  // 静音切换
+  handleChangeMute(index) {
+    if (!this.audioAuthority && this.role !== ROLE.MEDIATOR) {
+      return false
+    }
+    const item = this.list[index]
+    if (!item.turnAudioAuthority) {
+      return false
+    }
+    var turnAudioAuthority = true
+    if (this.role === ROLE.MEDIATOR && item.muted) {
+      turnAudioAuthority = true
+    } else if (this.role === ROLE.MEDIATOR && !item.muted) {
+      turnAudioAuthority = false
+    }
+    var userId = item.userId
+    if (item) {
+      const ready = !!(item.current ? item.pushURL : item.playerURL)
+
+      ready && this.sendSocketMessage(item.muted ? EVENTS.OPENVOICE : EVENTS.CLOSEVOICE, item.userId, {turnAudioAuthority, userId}, 'audio')
+    }
+  }
+  // 开启关闭视频
+  handleChangeCamera(index) {
+    if (!this.videoAuthority && this.role !== ROLE.MEDIATOR) {
+      return false
+    }
+    const item = this.list[index]
+    if (!item.turnVideoAuthority) {
+      return false
+    }
+    var turnVideoAuthority = true
+    if (this.role === ROLE.MEDIATOR && !item.enableCamera) {
+      turnVideoAuthority = true
+    } else if (this.role === ROLE.MEDIATOR && item.enableCamera) {
+      turnVideoAuthority = false
+    }
+    var userId = item.userId
+    if (item) {
+      const ready = !!(item.current ? item.pushURL : item.playerURL)
+
+      ready && this.sendSocketMessage(item.enableCamera ? EVENTS.CLOSEVIDEO : EVENTS.OPENVIDEO, item.userId, {turnVideoAuthority, userId}, 'video')
+
+    }
+  }
+  getItemList() {
+    if (this.role === ROLE.MEDIATOR || this.role === ROLE.ASSISTMEDIATOR || this.role === ROLE.VISITOR || this.role === ROLE.DEFENDANT_AGENT || this.role === ROLE.DEMANDANT_AGENT) {
+      return false
+    }
+    documentItemList({lawCaseId: this.caseId, lawMeetingId: this.meetingId})
+    .then((res) => {
+      this.actionSheetList = res.arr
+      this.$apply()
+    })
+    .catch(e => {
+      console.log(e)
+    })
+  }
+  // 发送socket消息
+  sendSocketMessage(event, data, author, type) {
+    return new Promise((resolve, reject) => {
+      let req = {event, data}
+
+      if (data !== null && typeof data === 'object') {
+        req = {...data, event}
+      }
+      if (type === 'audio') {
+        req.data = author
+      } else if (type === 'video') {
+        req.data = author
+      }
+
+      wx.sendSocketMessage({
+        data: JSON.stringify(req),
+        success: resolve,
+        fail: reject
+      })
+    })
+  }
+
+  // 发送文字消息
+  sendMessage(msg) {
+    var _this = this
+    sendMessage({
+      lawMeettingId: this.meetingId,
+      personnelId: this.personnelId,
+      content: msg,
+      sender: `[${this.roleName}]${this.actualName}`,
+      isVoice: 1
+    }, () => {
+      wx.showToast({title: '发送失败，请稍后再试！', icon: 'none'})
+    })
+    .then((data = {}) => {
+      _this.sendSocketMessage(EVENTS.GETCHATMSG, {
+        data: data.nemessageId
+      })
+    })
+    .catch(e => wx.hideNavigationBarLoading())
+  }
+
+  // 获取参会人员信息
+  fetchList() {
+    wx.showLoading('正在加载...')
+    getMeetingData({
+      role: this.role,
+      lawCaseId: this.caseId,
+      lawMeettingId: this.meetingId
+    })
+    .then((data = {}) => {
+      wx.hideLoading()
+      console.log(data)
+      this.sdkAppId = data.sdkAppID
+      this.roomId = data.roomId
+      this.userId = data.userId
+      this.userSig = data.userSig
+      this.paramData = data.paramData
+      this.role = data.role
+      this.privMapEncrypt = data.privMapEncrypt
+      this.personnelId = data.personnelId
+      this.actualName = data.actualName
+      if (this.role === 10 || this.role === 12 || this.role === 13) {
+        this.roleName = '申请人'
+      } else if (this.role === 20 || this.role === 22 || this.role === 23) {
+        this.roleName = '被申请人'
+      } else if (this.role === 41 || this.role === 40) {
+        this.roleName = '申请人(代)'
+      } else if (this.role === 46 || this.role === 47) {
+        this.roleName = '被申请人(代)'
+      } else if (this.role === 60) {
+        this.roleName = '调解员'
+      } else if (this.role === 61) {
+        this.roleName = '协助调解员'
+      } else if (this.role === 70) {
+        this.roleName = '观察人员'
+      }
+      if (this.role === ROLE.MEDIATOR) {
+        this.sessionIdList = data.priSessions
+      } else {
+        this.sessionIdList = data.priSession
+      }
+      // 获取房间签名
+      this.getRoomSig()
+    })
+    .catch(e => {
+      console.log(e)
+      wx.hideLoading()
+    })
+  }
+  // 获取roomsig
+  getRoomSig() {
+    let url = 'https://official.opensso.tencent-cloud.com/v4/openim/jsonvideoapp?sdkappid=' + this.sdkAppId + '&identifier=' + this.userId + '&usersig=' + this.userSig + '&random=9999&contenttype=json'
+    let reqHead = {
+      'Cmd': 1,
+      'SeqNo': 1,
+      'BusType': 7,
+      'GroupId': Number(this.roomId)
+    }
+    let reqBody = {
+      'PrivMapEncrypt': this.privMapEncrypt,
+      'TerminalType': 1,
+      'FromType': 3,
+      'SdkVersion': 26280566
+    }
+    let _this = this
+    wx.request({
+      url: url,
+      data: {
+        'ReqHead': reqHead,
+        'ReqBody': reqBody
+      },
+      header: {
+        'content-type': 'application/json' // 默认值
+      },
+      method: 'POST',
+      success: function (res) {
+        _this.roomSig = encodeURIComponent(JSON.stringify(res.data['RspBody']))
+        // 建立socket连接
+        wx.showLoading({title: '建立连接...', mask: true})
+        _this.openSocket()
+      },
+      fail: function (res) {
+        wx.showToast({
+          title: '获取房间签名失败',
+          icon: 'none'
+        })
+      }
+    })
+  }
+  // 连接socket
+  openSocket() {
+    // const url = `${SOCKET_URL}appHome/${SOCKET_PREFIX}${this.role}x${this.userId}y${this.meetingId}`
+    const url = `${SOCKET_URL}mediateHome?param=${this.paramData}`
+
+    // 连接关闭
+    onSocketClose = res => {
+      console.log('onSocketClose')
+      console.log(res)
+
+      if (HEART_TIMER) {
+        clearInterval(HEART_TIMER)
+        HEART_TIMER = null
+      }
+
+      this.connected = false
+      this.$apply()
+
+      onSocketClose = null
+      onSendMessage = null
+      onSendPublicMessage = null
+    }
+
+    // 收到消息
+    onSocketMessage = ({data = '{}'}) => {
+      try {
+        this.onSocketMessage(JSON.parse(data))
+      } catch (e) {
+        console.log(e)
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      // 连接建立
+      onSocketOpen = res => {
+        wx.hideLoading()
+        this.connected = true
+        this.socketRequest = 0
+        this.$apply()
+
+        if (!HEART_TIMER) {
+          HEART_TIMER = setInterval(() => this.sendSocketMessage(EVENTS.HEART, '@heart'), 5e3)
+        }
+
+        onSocketOpen = null
+        // 向调解员发送私聊消息
+        onSendMessage = (data = {}) => {
+          this.sendSocketMessage(EVENTS.MISSCHAT, data)
+        }
+        onSendPublicMessage = (data = {}) => {
+          this.sendSocketMessage(EVENTS.GETCHATMSG, data)
+        }
+
+        resolve(res)
+      }
+
+      // 连接出错
+      onSocketError = res => {
+        wx.hideLoading()
+        console.log('onSocketError')
+        console.log(res)
+
+        onSocketError = null
+
+        // 连5次
+        if (this.socketRequest++ < 100) {
+          setTimeout(() => this.openSocket().then(resolve), 1000)
+        } else {
+          // 超过5次失败
+          reject(res)
+          // 停止语音转文字
+          this.isIdentify = false
+          manager.stop()
+          showAlert('网络多次连接失败，请退出重试')
+          .then(() => wx.navigateBack())
+        }
+      }
+
+      wx.connectSocket({
+        url,
+        success: (res) => {
+          console.log('connectSocket', res)
+        }
+      })
+    })
+  }
+
+  // socket 接收到消息
+  onSocketMessage(res = {}) {
+    console.log(res)
+    const {
+      event = '',
+      data = ''
+    } = res
+
+    if (!this.livePushContext && this.role !== ROLE.VISITOR) {
+      this.livePushContext = wx.createLivePusherContext()
+    }
+
+    if (!this.loaded) {
+      wx.hideLoading()
+      this.loaded = true
+    }
+
+    let index = -1
+
+    switch (event) {
+    case EVENTS.CHANGE: // 人员新增
+      console.log(res.data)
+      // 定义当前已经进入房间所有人的信息列表
+      this.userList = res.data.members
+      // 当检测到人员变动时进行数据处理
+      this.setPeople()
+      break
+    case EVENTS.REDUCE: // 人员退出
+      // 当检测到人员变动时进行数据处理
+      this.delPeople(res.data.userId)
+      break
+    case EVENTS.OPENVOICE: // 开启声音
+      index = this.list.findIndex(({userId}) => userId === data.userId)
+      this.audioAuthority = res.data.turnAudioAuthority
+      if (index > -1 && this.list[index].muted) {
+        this.list[index].muted = false
+      }
+      break
+    case EVENTS.CLOSEVOICE: // 关闭声音
+      index = this.list.findIndex(({userId}) => userId === data.userId)
+      this.audioAuthority = res.data.turnAudioAuthority
+      if (index > -1 && !this.list[index].muted) {
+        this.list[index].muted = true
+      }
+      break
+    case EVENTS.OPENVIDEO: // 开启视频
+      index = this.list.findIndex(({userId}) => userId === data.userId)
+      this.videoAuthority = res.data.turnVideoAuthority
+      if (index > -1 && !this.list[index].enableCamera) {
+        this.list[index].enableCamera = true
+      }
+      break
+    case EVENTS.CLOSEVIDEO: // 关闭视频
+      index = this.list.findIndex(({userId}) => userId === data.userId)
+      this.videoAuthority = res.data.turnVideoAuthority
+      if (index > -1 && this.list[index].enableCamera) {
+        this.list[index].enableCamera = false
+      }
+      break
+    case EVENTS.GETCHATMSG: // 接收文字消息
+      // 发送人本人无法再次添加信息的处理
+      ZanEvent.trigger(EVENTS.GETCHATMSG, { data: res.data })
+      this.hasPublicChat = true
+      break
+    case EVENTS.MISSCHAT: // 私聊消息
+      if (res.priChatTo === this.personnelId) {
+        ZanEvent.trigger(EVENTS.MISSCHAT, res)
+        if (this.role === ROLE.MEDIATOR) {
+          var idx = this.sessionIdList.findIndex(({id}) => id === res.priChatSession)
+          var id = this.sessionIdList[idx].personnel.id
+          var i = this.list.findIndex(({personnelId}) => personnelId === id)
+          this.list[i].isMsg = true
+        } else {
+          if (this.personnelId === res.priChatTo) {
+            var idxs = this.list.findIndex(({role}) => role.code === ROLE.MEDIATOR)
+            this.list[idxs].isMsg = true
+          }
+        }
+      }
+      break
+    case EVENTS.MIXSTREAM: // 开始录制是否成功
+      if (this.role === ROLE.MEDIATOR) {
+        if (data.mixStatus) {
+          this.isRecord = true
+        } else {
+          showAlert(data.message)
+        }
+      }
+      break
+    case EVENTS.STOPMIXSTREAM: // 关闭录制是否成功
+      if (this.role === ROLE.MEDIATOR) {
+        if (!data.mixStatus) {
+          this.isRecord = false
+        } else {
+          showAlert(data.meesage)
+        }
+      }
+      break
+    case EVENTS.SPEECHSTATUSCHANGE: // 语音转文字状态改变
+      if (data.speechStatus) {
+        this.isIdentify = true
+        manager.start({ duration: 30000, lang: 'zh_CN' })
+      } else {
+        this.isIdentify = false
+        manager.stop()
+      }
+      break
+    case EVENTS.DOCUMENT:
+      if (data.document === 'adbSend' || data.document === 'noDFSend' || data.document === 'record' || data.document === 'lmsSend' || data.document === 'jdbSend' || data.document === 'mdbSend') {
+        this.getItemList()
+      }
+    }
+    this.$apply()
+  }
+  setPeople() {
+    // 判断进入的逻辑处理
+    this.userList.forEach(item => {
+      // 首先查看当前list是否有信息
+      let index = this.list.findIndex(({userId}) => userId === item.userId)
+      if (index === -1) {
+        // 如果当前列表无该人物信息
+        // 判断当前人物信息是否为推流还是拉流
+        if (item.userId === this.userId) {
+          // 判断当前房间是否开启语音转文字
+          if (item.speechStatus) {
+            this.isIdentify = true
+            manager.start({ duration: 30000, lang: 'zh_CN' })
+          }
+          // 如果当前人物为推流
+          this.list.push({
+            current: true,
+            muted: !item.audioStatus,
+            enableCamera: item.videoStatus,
+            pushURL: 'room://cloud.tencent.com?sdkappid=' + this.sdkAppId + '&roomid=' + this.roomId + '&userid=' + this.userId + '&roomsig=' + this.roomSig,
+            userId: item.userId,
+            role: {code: Number(item.role)},
+            actualName: item.nickName,
+            turnVideoAuthority: item.turnVideoAuthority,
+            turnAudioAuthority: item.turnAudioAuthority,
+            personnelId: item.personnelId,
+            // 控制该节点是否显示
+            isShow: true,
+            // 私聊消息红点处理
+            isMsg: false,
+          })
+        } else {
+          this.list.push({
+            current: false,
+            muted: !item.audioStatus,
+            enableCamera: item.videoStatus,
+            playerURL: '',
+            userId: item.userId,
+            role: {code: Number(item.role)},
+            actualName: item.nickName,
+            turnVideoAuthority: item.turnVideoAuthority,
+            turnAudioAuthority: item.turnAudioAuthority,
+            personnelId: item.personnelId,
+            // 控制该节点是否显示
+            isShow: true,
+            isMsg: false
+          })
+        }
+      }
+    })
+    this.$apply()
+  }
+  setVideo() {
+    this.list.forEach(item => {
+      if (item.playerURL === '') {
+        let index = this.playerList.findIndex(({userid}) => userid === item.userId)
+        console.log(index)
+        if (index > -1) {
+          item.playerURL = this.playerList[index].playurl
+          item.isShow = true
+        }
+      }
+    })
+    this.$apply()
+  }
+  delPeople(id) {
+    // 查看当前退出的人员在渲染列表的坐标
+    var index = this.list.findIndex(({userId}) => userId === id)
+    console.log(index)
+    // 删除退出人员的信息
+    if (index > -1) {
+      this.list[index].isShow = false
+      this.list[index].playerURL = ''
+    }
+    this.$apply()
+  }
+  onHide() {
+    if (this.connected) { // 已建立连接
+      // 发送onHide事件
+      this.sendSocketMessage(EVENTS.ONHIDE, this.personnelId)
+    }
+  }
+
+  onShow() {
+    if (this.error) return
+    this.getItemList()
+    // 同步授权状态
+    if (!this.authorized) {
+      this.authorized = getItemSync('authorized')
+    }
+
+    // 清除消息红点
+    if (this.hasBadge) {
+      this.hasBadge = false
+      this.$apply()
+    }
+
+    // 已授权
+    if (this.authorized) {
+      // 加载参会人员列表
+      if (!this.list.length && !this.notify) {
+        this.fetchList()
+      } else if (this.connected) { // 已建立连接
+        // 发送onShow事件
+        this.sendSocketMessage(EVENTS.ONSHOW, this.personnelId)
+      }
+    } else {
+      // 获取用户授权
+      // wx.showLoading('正在加载...')
+      wxAuthorize(['scope.camera', 'scope.record'])
+      .then(() => {
+        this.authorized = true
+        setItem('authorized', this.authorized)
+        // 加载参会人员列表
+        // this.fetchList()
+        if (!this.list.length && !this.notify) {
+          this.fetchList()
+        }
+      })
+      .catch(() => {
+        // wx.hideLoading()
+        showAlert('视频调解需要访问您的摄像头和录音功能，请您开启摄像头和录音功能权限')
+        .then(() => openSetting())
+      })
+    }
+  }
+  onLoad(opts = {}) {
+    console.log(opts)
+    var _this = this
+    const {q = ''} = opts
+    const params = getQueryString(decodeURIComponent(q))
+    const {userid, caseid, meetingid, role, platform} = params || opts
+    this.userId = userid - 0
+    this.caseId = caseid - 0
+    this.meetingId = meetingid - 0
+    this.role = role - 0
+    this.platform = platform
+    if (this.role === ROLE.MEDIATOR) {
+      this.notify = false
+      wx.showModal({
+        title: '温馨提示',
+        content: '视频调解开始前，请点击视频保存，对于调解过程，进行视频录制的操作。',
+        showCancel: false
+      })
+    } else if (this.role === ROLE.ASSISTMEDIATOR || this.role === ROLE.VISITOR) {
+      this.notify = false
+    }
+    if (isNaN(this.userId) || isNaN(this.caseId) || isNaN(this.meetingId) || isNaN(this.role)) {
+      this.error = true
+      return wx.showModal({
+        title: '提示',
+        showCancel: false,
+        content: `参数错误：${JSON.stringify(opts)}`
+      })
+    }
+
+    manager = plugin.getRecordRecognitionManager()
+    // 检测是否有语音并进行识别
+    manager.onRecognize = function (res) {
+      console.log('current result==', res.result)
+      manager.stop()
+    }
+    manager.onStart = function (res) {
+      console.log('录音状态==', res.msg)
+    }
+    // 录音结束时，再次启动录音
+    manager.onStop = function (res) {
+      console.log('record file path', res.tempFilePath)
+      console.log('result', res.result)
+      if (res.result !== '') {
+        // 如果语音识别内容为空时
+        _this.sendMessage(res.result)
+      }
+      // 判断是否需要重启识别，调解员关闭录制，停止语音识别，管理员开启录制，即可开启语音识别，语音识别也可单独控制
+      if (_this.isIdentify) {
+        manager.start({ duration: 30000, lang: 'zh_CN' })
+      }
+    }
+    manager.onError = function (res) {
+      if (_this.isIdentify) {
+        manager.start({ duration: 30000, lang: 'zh_CN' })
+      }
+      console.error('error msg', res.msg)
+      console.log(res)
+    }
+    this.$apply()
+  }
+
+  onUnload() {
+    this.connected && wx.closeSocket()
+
+    onSocketClose && onSocketClose()
+    // 页面卸载
+    this.isIdentify = false
+    manager.stop()
+    // 关闭屏幕常亮
+    wx.setKeepScreenOn({keepScreenOn: false})
+  }
+}
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+
+  page {
+    padding-bottom: 46px;
+    background-color: #265889;
+    .invitation-box{
+      width: 230rpx;
+      height: 80rpx;
+      background-color: #1f4a74;
+      border-radius: 4rpx;
+      border: solid 1rpx #0d96ff;
+      color: #ffffff;
+      font-size: 30rpx;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin:0 auto;
+      image{
+        width: 28rpx;
+        height: 28rpx;
+        margin-right: 10rpx;
+      }
+    }
+    .live-container{
+      width: 750rpx;
+      height: 980rpx;
+      .live-box{
+        width: 330rpx;
+        height: 440rpx;
+        border-radius: 4rpx;
+        .live-item {
+          width: 100%;
+          height: 100%;
+          border-radius: 4rpx;
+          position: relative;
+          overflow: hidden;
+          box-sizing: border-box;
+
+          &.child-odd {
+            border-left: 1rpx solid lighten($primary-color, 55%);
+          }
+
+          .live-video {
+            border-radius: 4rpx;
+            width: 100%;
+            position: relative;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: $gray;
+            overflow: hidden;
+          }
+          .role-name{
+            width: 100%;
+            height: 50rpx;
+            font-size: 24rpx;
+            line-height: 50rpx;
+            color: #ffffff;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            z-index: 111;
+            overflow: hidden;
+            text-overflow:ellipsis;
+            white-space: nowrap;
+          }
+          .btn-box{
+            width: 200rpx;
+            height: 40rpx;
+            position: absolute;
+            top: 16rpx;
+            left: 16rpx;
+            display: flex;
+            justify-content: flex-start;
+            z-index: 111;
+            .btn-img{
+              width: 40rpx;
+              height: 40rpx;
+              margin-right: 10rpx;
+            }
+          }
+          .session-btn{
+            width: 40rpx;
+            height: 40rpx;
+            position: absolute;
+            top: 16rpx;
+            right: 16rpx;
+            .session-img{
+              width: 40rpx;
+              height: 40rpx;
+            }
+            .session-img-count{
+              width: 10rpx;
+              height: 10rpx;
+              position: absolute;
+              right: 0rpx;
+              top: 0rpx;
+            }
+          }
+        }
+      }
+    }
+    /*各种不同样式处理方式 1个人*/
+    .live-item1{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    /*各种不同样式处理方式 2个人*/
+    .live-item2{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      .live-box{
+        &:nth-child(even){
+          margin-left: 30rpx;
+        }
+      }
+    }
+    /*各种不同样式处理方式 3个人*/
+    .live-item3{
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        float: left;
+        margin-left: 30rpx;
+        margin-top: 30rpx;
+        &:nth-child(3){
+          margin-left: 210rpx;
+        }
+      }
+    }
+    /*各种不同样式处理方式 4个人*/
+    .live-item4{
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        float: left;
+        margin-left: 30rpx;
+        margin-top: 30rpx;
+      }
+    }
+    /*各种不同样式处理方式 5个人*/
+    .live-item5{
+      margin: 10rpx;
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        width: 230rpx;
+        height: 300rpx;
+        float: left;
+        margin-left: 10rpx;
+        margin-top: 10rpx;
+        &:nth-child(1){
+          margin-top: 150rpx;
+        }
+        &:nth-child(2){
+          margin-top: 150rpx;
+        }
+        &:nth-child(3){
+          margin-top: 150rpx;
+        }
+        &:nth-child(4){
+          margin-left:115rpx;
+        }
+      }
+    }
+    /*各种不同样式处理方式 6个人*/
+    .live-item6{
+      margin: 10rpx;
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        width: 230rpx;
+        height: 300rpx;
+        float: left;
+        margin-left: 10rpx;
+        margin-top: 10rpx;
+        &:nth-child(1){
+          margin-top: 150rpx;
+        }
+        &:nth-child(2){
+          margin-top: 150rpx;
+        }
+        &:nth-child(3){
+          margin-top: 150rpx;
+        }
+      }
+    }
+    .live-item7{
+      margin: 10rpx;
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        width: 230rpx;
+        height: 300rpx;
+        float: left;
+        margin-left: 10rpx;
+        margin-top: 10rpx;
+        &:nth-child(7){
+          margin-left: 250rpx;
+        }
+      }
+    }
+    .live-item8{
+      margin: 10rpx;
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        width: 230rpx;
+        height: 300rpx;
+        float: left;
+        margin-left: 10rpx;
+        margin-top: 10rpx;
+        &:nth-child(7){
+          margin-left: 115rpx;
+        }
+      }
+    }
+    .live-item9{
+      margin: 10rpx;
+      &:after{
+        content:'';
+        display: block;
+        clear: both;
+      }
+      .live-box{
+        width: 230rpx;
+        height: 300rpx;
+        float: left;
+        margin-left: 10rpx;
+        margin-top: 10rpx;
+      }
+    }
+  }
+  .notify{
+    position: fixed;
+    display: flex;
+    align-items: center;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    .main {
+      width: 630rpx;
+      border-radius: 5rpx;
+      margin: 0 auto;
+      .title {
+        height: 80rpx;
+        line-height: 80rpx;
+        font-size: 32rpx;
+        font-weight: bold;
+        text-align: center;
+        color: #333;
+        background-color: #efefe0;
+      }
+      .content {
+        background-color: #fff;
+        color: #737373;
+        .text {
+          white-space: pre-wrap;
+          /*height: 500rpx;*/
+          line-height: 44rpx;
+          margin: 40rpx;
+          margin-bottom: 0;
+          font-size: 24rpx;
+        }
+        .btn{
+          width: 560rpx;
+          height: 90rpx;
+          line-height: 90rpx;
+          background-color: #225689;
+          border-radius: 8rpx;
+          color: #ffffff;
+          text-align: center;
+          margin: 40rpx auto;
+          margin-top: 0;
+          font-size: 32rpx;
+        }
+      }
+    }
+  }
+  .live-player {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+  .cover-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    background-color: $gray;
+  }
+  .cover-image {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .live-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    color: $gray-dark;
+  }
+  .live-placeholder__icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+  }
+  .toolbar,
+  .live-title,
+  .live-media__btns {
+    display: flex;
+    flex-direction: row;
+  }
+  .toolbar{
+    width: 100%;
+    background-color: white;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+  }
+  .live-title {
+    color: $primary-color;
+    background-color: lighten($primary-color, 60%);
+  }
+  .live-media__text {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .live-media__btns {
+    padding-right: 5px;
+    .zan-btn--mini {
+      height: 30px;
+      margin-right: 0;
+      line-height: 30px;
+      color: $primary-color;
+      background-color: transparent;
+      border: none;
+
+      &::after {
+        display: none;
+      }
+    }
+  }
+  .toolbar {
+    color: #666666;
+    .disabledColor{
+      color:#678aab;
+    }
+    .disabledColor__icon{
+      border: 1rpx solid #678aab;
+    }
+  }
+  .toolbar-item {
+    flex: 1;
+    text-align: center;
+    padding: 10rpx 6px;
+    position: relative;
+    top: 0;
+    left: 0;
+    image{
+      width: 44rpx;
+      height: 46rpx;
+    }
+    .zan-badge-count {
+      height:18rpx;
+      width:18rpx;
+      border-radius:100%;
+      padding:0;
+      background-color:red;
+      display:inline-block;
+      position:absolute;
+      top:0;
+      left:60px;
+    }
+  }
+  .toolbar-item__icon,
+  .toolbar-item__text {
+    vertical-align: middle;
+    line-height: 1;
+    font-size: 24rpx;
+  }
+  .toolbar-item__icon {
+    width: 30px;
+    height: 30px;
+    line-height: 28px;
+    text-align: center;
+    margin-right: 10px;
+    border: 1rpx solid $white;
+    border-radius: 50%;
+    box-sizing: border-box;
+    .zan-badge__count {
+      height: 1em;
+      min-width: 1em;
+      top: -10px;
+      left: 60px;
+    }
+  }
+  .msg-container {
+    position: relative;
+    overflow: hidden;
+  }
+  .msg-list {
+    .zan-cell::after {
+      width: auto;
+      right: 15px;
+      transform: scaleY(.5);
+    }
+
+    .zan-cell__hd {
+      align-self: flex-start;
+      padding-right: 8px;
+    }
+
+    .dot {
+      display: inline-block;
+      vertical-align: top;
+      width: 6px;
+      height: 6px;
+      margin-top: 3px;
+      background-color: $orange;
+      border-radius: 50%;
+    }
+
+    .zan-cell__text {
+      font-size: 12px;
+      line-height: 1;
+      margin-bottom: 5px;
+      color: $primary-color;
+    }
+  }
+  .input-bar {
+    display: flex;
+    flex-direction: row;
+    padding: 6px 12px;
+    box-sizing: border-box;
+    background-color: $white;
+  }
+  .input-bar__input {
+    flex: 1;
+    height: 34px;
+    min-height: 34px;
+    padding: 3px 10px;
+    line-height: 34px;
+    background-color: $background-color;
+    border: 1rpx solid $border-color;
+    border-radius: 3px;
+    box-sizing: border-box;
+  }
+  .input-bar__btn {
+    height: 34px;
+    min-height: 34px;
+    line-height: 34px;
+    border-radius: 3px;
+  }
+  .input-bar__input + .input-bar__btn {
+    margin-left: 10px;
+  }
+</style>

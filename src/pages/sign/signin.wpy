@@ -1,0 +1,297 @@
+<template>
+  <view class="container {{fexid?'fexid':''}}">
+
+    <view class="content-padded ">
+      <image class="logo" src="../../images/sign/logo.png"></image>
+    </view>
+
+    <view style="padding: 0 30px">
+
+      <view class="content-padded">
+
+        <view class="zan-hairline--bottom">
+          <view class="zan-cell zan-field">
+            <view class="zan-cell__icon icon icon-phone zan-font-20"></view>
+            <input class="zan-field__input zan-cell__bd name"  placeholder="请输入手机号" value="{{name}}" maxlength="11" type="number" @input="userInput('name')" />
+          </view>
+        </view>
+
+        <view class="zan-hairline--bottom">
+          <view class="zan-cell zan-field">
+            <view class="zan-cell__icon icon icon-lock zan-font-20"></view>
+            <input password="true"  class="zan-field__input zan-cell__bd pass"
+                   placeholder="请输入密码"
+                   value="{{pass}}"
+                   @blur="handleBlur"
+                   @focus="handleFocus"
+                   @input="userInput('pass')"
+            />
+          </view>
+        </view>
+
+      </view>
+
+      <view class="content-padded">
+        <button class="zan-btn zan-btn--primary {{ loading ? 'zan-btn--loading' : '' }}" disabled="{{ loading }}" @tap="submit">登录</button>
+        <view class="zan-clearfix">
+          <navigator class="zan-pull-left" url="signup">立即注册</navigator>
+          <navigator url="forget-pass" class="zan-pull-right">忘记密码？</navigator>
+        </view>
+        <view>
+          <button style="margin-top: 20px;" class="zan-btn zan-btn--primary">
+            <navigator url="/pages/user/comein-living">身份验证直接进入视频</navigator>
+          </button>
+          <view class="zan-clearfix">
+            <view class="zan-pull-left" style="color:red;">此功能仅支持注册并已实名认证的用户使用</view>
+          </view>
+        </view>
+      </view>
+      <view style="display: flex;flex-direction: row;justify-content: center;margin-bottom: 15px;">
+        <navigator style="padding: 10px;" url="codeLogin">邀请码登录</navigator>
+      </view>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {userSignin, getHomeData} from '@/api/sign' // 引入登录接口
+  import {validate, patterns} from '@/utils/validate' // 用户输入表单的验证
+  import {hasToken, saveToken, saveUserInfo} from '@/utils/utils' // 保存登录后的token,用户信息
+  import {setItem, getItem} from '@/utils/storage'
+  import {getLawCases, getLawCaseProgress} from '@/api/user'
+
+  export default class SignIn extends wepy.page {
+    config = {
+      navigationBarTitleText: '登录'
+    }
+
+    data = {
+      name: '',
+      pass: '',
+      goBack: false,
+      loading: false,
+      isAndroid: false,
+      fexid: false,
+      hasToken: hasToken(),
+      status: null,
+      list: [],
+      listo: {},
+      listData: null
+    }
+    // 用户输入表单验证
+    validate() {
+      return validate({
+        name: {
+          required: '请输入手机号',
+          pattern: patterns.phone,
+          message: '请输入正确的手机号'
+        },
+        pass: '请输入密码'
+      }, this)
+    }
+    onLoad({back}) {
+      this.goBack = !!back
+      try {
+        let res = wx.getSystemInfoSync()
+        let sys = res.system.indexOf('Android')
+        if (sys > -1) {
+          this.isAndroid = true
+          this.$apply()
+        }
+      } catch (e) {
+        // Do something when catch error
+      }
+      this.$apply()
+    }
+    onShow() {
+      getItem('name').then((data = {}) => {
+        this.name = data.data
+      }).catch(() => {
+        this.name = ''
+      })
+      getItem('pwd').then((data = {}) => {
+        this.pass = data.data
+      }).catch(() => {
+        this.pass = ''
+      })
+      this.hasToken = hasToken()
+      this.$apply()
+      if (this.hasToken) {
+        getHomeData() // 检测token 是否过期 新用户注册完成后默认登录保存用户信息
+        // 然后进入 实名认证页面 当用户非正常流程退出的时候 比如点了返回键
+        // 会返回到登录页面 此时用户实际上已经登录 用此接口判断token是否过期
+        // 如果过期就什么也不做 否则就是关闭当前页 返回首页
+          .then((data) => {
+            wx.navigateBack({
+              delta: 2
+            })
+          }).catch(e => {
+            console.log(e.code)
+          })
+      }
+    }
+    onPullup(type, cb) {
+      // 若没有数据，或已加载完，或正在加载，则不做处理
+      if (this.nodata || this.nomore || this.loading) return
+      // 开启加载状态
+      this.status = '正在调解'
+      this.loading = true
+      getLawCases({
+        statusName: this.status,
+        pageSize: 10,
+        pageNum: 1
+      })
+        .then((data = {}) => {
+          // 关闭加载状态
+          this.loading = false
+
+          // 将返回的数据追加到list中
+          console.log(data.lawCases)
+          if (data.lawCases.length === 1) {
+            this.listData = data.lawCases[0].id
+            this.getList()
+          } else {
+            if (this.goBack) {
+              wx.navigateBack()
+            } else {
+              wx.reLaunch({
+                url: '/pages/home/home'
+              })
+            }
+          }
+          this.itemCount = data.size || 0
+          // 计算是否有数据
+          this.nodata = this.itemCount === 0
+          // 计算是否已加载完
+          this.nomore = !this.nodata && this.list.length === this.itemCount
+
+          // 若未加载完，则页码加1
+
+          this.$apply()
+
+          cb && cb()
+        })
+        .catch(e => {
+          // 关闭加载状态
+          this.loading = false
+          this.$apply()
+
+          cb && cb()
+        })
+    }
+    getList(type, cb) {
+      getLawCaseProgress({
+        lawCaseId: this.listData
+      }).then((data = {}) => {
+        console.log(data)
+        let lists = data.lawCaseProgress || []
+        let params = `caseid=${lists[0].lawCaseId}&meetingid=${lists[0].meetingId}&userid=${lists[0].personnelid}&role=${lists[0].role}`
+        wx.navigateTo({url: `/pages/mediate/live?${params}`})
+        this.$apply()
+
+        cb && cb()
+      }).catch()
+    }
+    methods = {
+      handleFocus() {
+        if (this.isAndroid) {
+          this.fexid = true
+          this.$apply()
+        }
+      },
+      handleBlur() {
+        this.fexid = false
+        this.$apply()
+      },
+      // 用户输入
+      userInput(field, {detail}) {
+        this[field] = detail.value
+        this.$apply()
+      },
+      submit() {
+        if (this.validate()) {
+          // let self = this
+          this.loading = true
+          userSignin({
+            name: this.name,
+            pwd: this.pass
+          })
+            .then((data) => {
+              this.loading = false
+              // console.log(data)
+              wx.setStorage({
+                key: 'logonData',
+                data: data
+              })
+              // 登录成功 保存token
+              setItem('name', this.name)
+              setItem('pwd', this.pass)
+              saveToken(data.token)
+              // console.log(saveToken(data.token))
+              // 保存用户信息
+              const {user = {}} = data
+              saveUserInfo(Object.assign(data, {...user}, {avatarUrl: user.headPortrait}))
+
+              // 判断用户是否实名认证 0是没有 就跳转页面到 实名认证页面
+              // if (data.isAuthenticate === 0 || data.isFaceAuth === 0) {
+              //   return wx.redirectTo({
+              //     url: '/pages/user/real-name-authentication'
+              //   })
+              // }
+              // console.log(data.laceResult[0])
+              if (data.laceResult.length === 1) {
+                // let params = `caseid=${data.laceResult[0].lawCase.lawCaseId}&meetingid=${data.laceResult[0].meetingId}&userid=${data.laceResult[0].lawCase.personnelId}&role=${data.laceResult[0].lawCase.role}`
+                let params = `caseid=${data.laceResult[0].lawCaseId}&meetingid=${data.laceResult[0].lawMeettingId}&userid=${data.laceResult[0].personnelId}&role=${data.laceResult[0].role}`
+                wx.navigateTo({url: `/pages/mediate/live?${params}`})
+                this.$apply()
+              } else {
+                if (this.goBack) {
+                  wx.navigateBack()
+                } else {
+                  wx.reLaunch({
+                    url: '/pages/home/home'
+                  })
+                }
+              }
+            })
+            .catch(() => {
+              this.loading = false
+              this.$apply()
+            })
+        }
+      }
+    }
+  }
+
+</script>
+
+<style lang="scss">
+page{
+  width: 100vm;
+}
+  .logo {
+    width: 460rpx;
+    height: 230rpx;
+    margin: 100rpx auto 60rpx;
+    display: block;
+  }
+.fexid{
+  position: absolute;
+  top: -100px;
+  width: 100%;
+}
+  .zan-field {
+    padding: 8px 10px;
+  }
+
+  .zan-field__input {
+    padding: 3px 0;
+    min-height: 22px;
+    height: auto;
+  }
+  .zan-font-20{
+    font-size: 36rpx;
+  }
+</style>

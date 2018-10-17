@@ -1,0 +1,112 @@
+<script>
+import wepy from 'wepy'
+import 'wepy-async-function'
+import requestInterceptor from './utils/requestInterceptor'
+
+export default class ODR extends wepy.app {
+  config = {
+    pages: [
+      // 首页
+      'pages/home/home', // 首页
+      'pages/home/consult', // 在线人工咨询(非实时)
+      'pages/home/flow', // 解纷流程
+      'pages/home/service', // 仲裁服务
+      'pages/intelligentConsult/intelligentConsult', // 智能咨询
+      'pages/intelligentConsult/legalKnowledge', // 法律知识
+      'pages/intelligentConsult/relateCase', // 相关案例
+      'pages/intelligentConsult/disputeResolution', // 解纷方式
+      'pages/home/tmap', // 地图例子
+      'pages/home/my-mediating', // 正在进行的视频列表
+
+      // 评估
+      'pages/assessment/assessment-add', // 创建当事人信息
+      'pages/assessment/assessment-step', // 创建评估
+      'pages/assessment/success', // 创建评估提交成功
+
+      // 调解
+      'pages/mediate/apply', // 申请调解
+      'pages/mediate/apply-add', // 申请调解-添加|修改当事人信息
+      'pages/mediate/apply-step2', // 申请调解-第二步纠纷详情
+      'pages/mediate/apply-search', // 申请调解-调解机构选择
+      'pages/mediate/success', // 申请调解-提交成功
+      'pages/mediate/live', // 申请调解-视频调解
+      'pages/mediate/chat', // 申请调解-视频调解-私聊调解员
+      'pages/mediate/publicChat', // 申请调解-视频调解-公共聊天
+      'pages/mediate/material', // 申请调解-证据材料
+      'pages/mediate/material-add', // 申请调解-添加证据材料
+      'pages/mediate/document', // 申请调解-相关文书
+      'pages/mediate/confirm', // 调解笔录确认
+      'pages/mediate/invite', // 邀请参与
+      'pages/mediate/applicationBook', // 公共聊天
+
+      // 个人中心
+      'pages/user/user', // 个人账户
+      'pages/user/user1', // 进入视频
+      'pages/user/test', // 测试
+      'pages/user/modify-password', // 修改密码
+      'pages/user/modify-mobile', // 修改绑定手机
+      'pages/user/modify-email', // 修改绑定邮箱
+      'pages/user/my-consultation', // 我的咨询
+      'pages/user/my-mediate', // 我的调解 '
+      'pages/user/my-assessment', // 我的评估 '
+      'pages/user/dispute-info', // 纠纷详情 '
+      'pages/user/dispute-info2', // 纠纷信息 '
+      'pages/user/party', // 当事人
+      'pages/user/party-info', // 当事人信息
+      'pages/user/mediation-progress', // 调解进度
+      'pages/user/real-name-authentication', // 实名校验第一步 身份证号码
+      'pages/user/select-consultion', // 选择咨询师
+      'pages/user/submit-comments', // 评价咨询师
+      'pages/user/comein-living', // 直接进入视频
+
+      // 登录注册
+      'pages/sign/signin', // 登录
+      'pages/sign/signup', // 注册
+      'pages/sign/forget-pass', // 忘记密码
+      'pages/sign/modify-password', // 修改密码
+      'pages/sign/codeLogin', // 邀请码登录
+
+      // 服务资源
+      'pages/resources/consultant', // 咨询师
+      'pages/resources/mediator', // 调解员
+      'pages/resources/arbitration', // 仲裁机构
+      'pages/resources/court', // 法院
+
+      // common
+      'pages/webview/webview', // webview
+      'pages/webview/counter'  //计算器
+    ],
+    window: {
+      navigationBarBackgroundColor: '#255787'
+    },
+    appid: 'wxfb3210c3d6871fb4',
+    // debug: true
+    plugins: {
+      WechatSI: {
+        version: '0.1.0',
+        provider: 'wx069ba97219f66d99'
+      }
+    }
+  }
+
+  constructor () {
+    super()
+    this.use('promisify')
+    this.use('requestfix')
+    this.intercept('request', requestInterceptor)
+  }
+}
+</script>
+
+<style lang="scss">
+@import 'zanui/badge';
+@import 'zanui/btn';
+@import 'zanui/cell';
+@import 'zanui/col';
+@import 'zanui/panel';
+@import 'zanui/row';
+@import 'zanui/tag';
+@import 'zanui/helper';
+@import 'styles/icon';
+@import 'styles/base';
+</style>

@@ -1,0 +1,5377 @@
+<template xmlns:wx="http://www.w3.org/1999/xhtml">
+  <view class="container">
+    <view class="header">
+      <view style="font-size:16px;text-align: center;margin-top: 10px;">道路交通事故人身损害赔偿计算器</view>
+      <view style="font-size:14px;color:rgba(25, 158, 216, 0.84);line-height: 40px;">请选择所涉及赔付费用类型</view>
+      <text class="btn {{organizationClass == 1? 'btnYes' : ''}} {{organizationClass == 2? 'btnNo' : ''}}" @tap="addCss(1)">医疗费用</text>
+      <text class="btn {{dayClass == 1? 'btnYes' : ''}} {{dayClass == 2? 'btnNo' : ''}}" @tap="addCss(2)">误工费</text>
+      <text class="btn {{liveClass == 1? 'btnYes' : ''}} {{liveClass == 2? 'btnNo' : ''}}" @tap="addCss(3)">住院伙食补助费</text>
+      <text class="btn {{nutritionClass == 1? 'btnYes' : ''}} {{nutritionClass == 2? 'btnNo' : ''}}" @tap="addCss(4)">营养费</text>
+      <text class="btn {{nurseClass == 1? 'btnYes' : ''}} {{nurseClass == 2? 'btnNo' : ''}}" @tap="addCss(5)">护理费</text>
+      <text class="btn {{trafficClass == 1? 'btnYes' : ''}} {{trafficClass == 2? 'btnNo' : ''}}" @tap="addCss(6)">交通费</text>
+      <text class="btn {{stayClass == 1? 'btnYes' : ''}} {{stayClass == 2? 'btnNo' : ''}}" @tap="addCss(7)">住宿费</text>
+      <text class="btn {{bringClass == 1? 'btnYes' : ''}} {{bringClass == 2? 'btnNo' : ''}}" @tap="addCss(8)">被抚养人</text>
+      <text class="btn {{authenticateClass == 1? 'btnYes' : ''}} {{authenticateClass == 2? 'btnNo' : ''}}" @tap="addCss(9)">鉴定费</text>
+      <text class="btn {{comfortClass == 1? 'btnYes' : ''}} {{comfortClass == 2? 'btnNo' : ''}}" @tap="addCss(10)">精神抚慰金</text>
+      <text class="btn {{toolClass == 1? 'btnYes' : ''}} {{toolClass == 2? 'btnNo' : ''}}" @tap="addCss(11)">残疾辅助器具费</text>
+      <text class="btn {{disableClass == 1? 'btnYes' : ''}} {{disableClass == 2? 'btnNo' : ''}}" @tap="addCss(12)">残疾赔偿金</text>
+      <text class="btn {{deathClass == 1? 'btnYes' : ''}} {{deathClass == 2? 'btnNo' : ''}}" @tap="addCss(13)">死亡赔偿金</text>
+      <text class="btn {{funeralClass == 1? 'btnYes' : ''}} {{funeralClass == 2? 'btnNo' : ''}}" @tap="addCss(14)">丧葬费</text>
+      <text class="btn {{cureClass == 1? 'btnYes' : ''}} {{cureClass == 2? 'btnNo' : ''}}" @tap="addCss(15)">后期治疗费</text>
+    </view>
+
+    <view class="body">
+      <!--医疗费用 1-->
+      <view class="inputCss" style="display:{{first}}" >
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>保险赔偿</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{organization1}}" placeholder="请输入" @change="organizations1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> x 15%</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{organizationCount}}</text></view>
+        </view>
+      </view>
+      <!--误工费 2-->
+      <view class="inputCss" style="display:{{second}}">
+        <view class="radioSpan"><text>是否有固定收入</text></view>
+        <view class="inputCon">
+          <radio-group class="radio-group" style="margin-bottom: 10px" bindchange="radioChange">
+            <label class="radio" wx:for="{{items}}">
+              <radio value="{{item.value}}" checked="{{item.checked}}"/>{{item.name}}
+            </label>
+          </radio-group>
+        </view>
+
+        <view style="padding:10px auto;height:40px;" wx:if="{{radio == 1}}">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>同行业标准</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{day2}}" placeholder="请输入" @change="checkNo2" />
+          </view>
+          <text class="{{android? 'and' : 'ios'}}">元/天</text>
+        </view>
+        <view style="padding:10px auto;height:40px;line-height: 40px;" wx:if="{{radio == 2}}">
+          <view class="radioSpan"><text>户口类型</text></view>
+          <view class="inputCon">
+            <radio-group class="radio-group" bindchange="typeChange">
+              <label class="radio" wx:for="{{items2}}">
+                <radio value="{{item.value}}" checked="{{item.checked}}"/>{{item.name}}
+              </label>
+            </radio-group>
+          </view>
+        </view>
+
+        <view style="margin-top: 10px">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿天数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{day1}}" placeholder="请输入" @change="checkNo"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 天</text>
+          <view style="overflow: hidden">
+            <view class="count">小计：<text>{{dayCount1}}</text></view>
+          </view>
+        </view>
+      </view>
+      <!--住院伙食补助费 3-->
+      <view class="inputCss" style="display:{{third}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿标准</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{live1}}" placeholder="请输入" @change="lives1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿人数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{live2}}" placeholder="请输入" @change="lives2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 人</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿天数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{live3}}" placeholder="请输入" @change="lives3"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 天</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{liveCount}}</text></view>
+        </view>
+      </view>
+      <!--营养费 4-->
+      <view class="inputCss" style="display:{{fourth}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿标准</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{nutrition1}}" placeholder="请输入" @change="nutritions1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿人数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{nutrition2}}" placeholder="请输入" @change="nutritions2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 人</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿天数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{nutrition3}}" placeholder="请输入" @change="nutritions3"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 天</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{nutritionCount}}</text></view>
+        </view>
+      </view>
+      <!--护理费 5-->
+      <view class="inputCss" style="display:{{fifth}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿标准</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{nurse1}}" placeholder="请输入" @change="nurses1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿人数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{nurse2}}" placeholder="请输入" @change="nurses2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 人</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿天数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{nurse3}}" placeholder="请输入" @change="nurses3"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 天</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{nurseCount}}</text></view>
+        </view>
+      </view>
+      <!--交通费 6-->
+      <view class="inputCss" style="display:{{sixth}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>交通赔偿</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{traffic1}}" placeholder="请输入" @change="traffics1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{trafficCount}}</text></view>
+        </view>
+      </view>
+      <!--住宿费 7-->
+      <view class="inputCss" style="display:{{seventh}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>人数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{stay1}}" placeholder="请输入" @change="stays1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 人</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿天数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{stay2}}" placeholder="请输入" @change="stays2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 天</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{stayCount}}</text></view>
+        </view>
+      </view>
+      <!--被抚养人 8-->
+      <view class="inputCss" style="display:{{eighth}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>赔偿标准</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{bring1}}" placeholder="请输入" @change="brings1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>年限</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{bring2}}" placeholder="请输入" @change="brings2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 年</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>伤残等级系数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{bring3}}" placeholder="请输入" @change="brings3"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> %</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{bringCount}}</text></view>
+        </view>
+      </view>
+      <!--鉴定费 9-->
+      <view class="inputCss" style="display:{{ninth}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>鉴定费</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{authenticate1}}" placeholder="请输入" @change="authenticates1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{authenticateCount}}</text></view>
+        </view>
+      </view>
+      <!--精神抚慰金 10-->
+      <view class="inputCss" style="display:{{tenth}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>精神抚慰金</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{comfort1}}" placeholder="请输入" @change="comforts1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{comfortCount}}</text></view>
+        </view>
+      </view>
+      <!--残疾辅助器具费 11-->
+      <view class="inputCss" style="display:{{eleventh}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>残疾辅助器具赔偿</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{tool1}}" placeholder="请输入" @change="tools1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{toolCount}}</text></view>
+        </view>
+      </view>
+      <!--残疾赔偿金 12-->
+      <view class="inputCss" style="display:{{twelve}}">
+        <view class="box">
+          <view class="radioSpan"><text>年人均纯收入</text></view>
+          <view class="inputCon">
+            <radio-group class="radio-group" style="margin-bottom: 10px" bindchange="disables1">
+              <label class="radio" wx:for="{{itemsMore}}">
+                <radio value="{{item.value}}" checked="{{item.checked}}"/>{{item.name}}
+              </label>
+            </radio-group>
+          </view>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>年限</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{disable2}}" placeholder="请输入" @change="disables2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 年</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>伤残等级系数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{disable3}}" placeholder="请输入" @change="disables3"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> %</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{disableCount}}</text></view>
+        </view>
+      </view>
+      <!--死亡赔偿金 13-->
+      <view class="inputCss" style="display:{{thirteen}}">
+        <view class="box">
+          <view class="radioSpan"><text>年人均消费性支出</text></view>
+          <view class="inputCon">
+            <radio-group class="radio-group" style="margin-bottom: 10px" bindchange="deaths1">
+              <label class="radio" wx:for="{{itemsMore2}}">
+                <radio value="{{item.value}}" checked="{{item.checked}}"/>{{item.name}}
+              </label>
+            </radio-group>
+          </view>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>年限</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{death2}}" placeholder="请输入" @change="deaths2"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 年</text>
+        </view>
+
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>伤残等级系数</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{death3}}" placeholder="请输入" @change="deaths3"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> %</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{deathCount}}</text></view>
+        </view>
+      </view>
+      <!--丧葬费 14-->
+      <view class="inputCss" style="display:{{fourteen}}">
+        <view class="box">
+          <view class="radioSpan"><text>丧葬赔偿</text></view>
+          <view class="inputCon">
+            <radio-group class="radio-group" style="margin-bottom: 10px" bindchange="funerals1">
+              <label class="radio" wx:for="{{itemsMore3}}">
+                <radio value="{{item.value}}" checked="{{item.checked}}"/>{{item.name}}
+              </label>
+            </radio-group>
+          </view>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{funeralCount}}</text></view>
+        </view>
+      </view>
+      <!--后期治疗费 15-->
+      <view class="inputCss" style="display:{{fifteen}}">
+        <view class="box">
+          <view class="bodySpan {{android? 'and' : 'ios'}}"><text>后期治疗赔偿</text></view>
+          <view class="inputCon">
+            <input type="digit" value="{{cure1}}" placeholder="请输入" @change="cures1"/>
+          </view>
+          <text class="{{android? 'and' : 'ios'}}"> 元</text>
+        </view>
+        <view style="overflow: hidden">
+          <view class="count">小计：<text>{{cureCount}}</text></view>
+        </view>
+      </view>
+
+
+    </view>
+
+    <view style="text-align: center">
+      <button type="primary" size="mini" @tap="count">计算</button>
+    </view>
+    <view>
+      <text style="float: right;text-decoration: none;display: inline-block;padding-right: 20px;outline:none;cursor:pointer;line-height: 30px;color:#199ED8" @tap="see()">{{beforeHtml}}计算规则</text>
+    </view>
+    <view style="height: 350px;width: 100%;float: left">
+
+    </view>
+
+    <!--底部-->
+    <view class="footer" style="width:{{footerWidth}}px">
+      <scroll-view class="footLeft">
+        <!--<div id="copy">误工费：</div>-->
+        <!--<textarea style="border:1px solid;background:white;height: 130px;overflow: auto;overflow-y: scroll;overflow-scrolling: touch;-webkit-overflow-scrolling:touch;padding:5px;width:{{textAreaWidth}}px" id="copy" disabled="true">{{organizationHtml}}{{dayHtml}}{{liveHtml}}{{nutritionHtml}}{{nurseHtml}}{{trafficHtml}}{{stayHtml}}{{disableHtml}}{{deathHtml}}{{funeralHtml}}{{bringHtml}}{{toolHtml}}{{cureHtml}}{{comfortHtml}}{{authenticateHtml}}{{allHtml}}</textarea>-->
+        <scroll-view scroll-y style="border:1px solid;background:white;height: 130px;padding:5px;width:{{textAreaWidth}}px" id="copy" disabled="true">{{organizationHtml}}{{dayHtml}}{{liveHtml}}{{nutritionHtml}}{{nurseHtml}}{{trafficHtml}}{{stayHtml}}{{disableHtml}}{{deathHtml}}{{funeralHtml}}{{bringHtml}}{{toolHtml}}{{cureHtml}}{{comfortHtml}}{{authenticateHtml}}{{allHtml}}</scroll-view>
+      </scroll-view>
+
+      <view class="footRight">
+        <view style="text-align: center;display: block;text-align: center">
+          <button type="primary" size="mini" @tap="resetAll" style="margin-right: 20px;">重置</button>
+          <button type="primary" size="mini" @tap="copy">复制</button>
+        </view>
+        <view style="display: block;">
+          <view style="line-height: 40px;font-size: 30px;word-break: break-all;text-align: center;color:white;">{{allCount}}元</view>
+        </view>
+
+
+      </view>
+    </view>
+  </view>
+  <!--弹窗控件-->
+  <view class="model {{toggle? 'show' : 'hide'}}" style="width: {{modelWidth}}px;"></view>
+  <view  class="modelText {{toggle? 'show' : 'hide'}}">
+    <view class="title">{{modelTitle}}</view>
+    <view class="zhan"></view>
+    <scroll-view scroll-y class="top">{{modelText}}</scroll-view>
+    <view class="zhan"></view>
+    <view class="foot" @tap="modelHide">确定</view>
+  </view>
+
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  var _this
+  export default class Home extends wepy.page {
+    config = {
+      navigationBarTitleText: '辅助工具',
+      navigationBarTextStyle: 'black',
+      navigationBarBackgroundColor: '#ffffff'
+    }
+
+    data = {
+      // tab切换
+      flag: 1,
+      beforeHtml: '医疗费用',
+      //
+      // 屏幕宽度
+      footerWidth: 300,
+      textAreaWidth: 288,
+
+      displayOne: 'block',
+      displayTwo: 'none',
+      first: 'block',
+      second: 'none',
+      third: 'none',
+      fourth: 'none',
+      fifth: 'none',
+      sixth: 'none',
+      seventh: 'none',
+      eighth: 'none',
+      ninth: 'none',
+      tenth: 'none',
+      eleventh: 'none',
+      twelve: 'none',
+      thirteen: 'none',
+      fourteen: 'none',
+      fifteen: 'none',
+      // 医疗机构及费用
+      organization1: '',
+      organizationCount: '',
+      organizationHtml: '',
+      organizationClass: 2,
+      // 误工费
+      items: [
+        {value: 1, name: '是', checked: false},
+        {value: 2, name: '否', checked: false},
+      ],
+      items2: [
+        {value: 1, name: '城镇', checked: false},
+        {value: 2, name: '农村', checked: false},
+      ],
+      radio: '',
+      radio2: '',
+      day1: '',
+      day2: '',
+      dayCount1: '',
+      dayHtml: '',
+      dayClass: '',
+      // 住院伙食补助费
+      live1: '',
+      live2: '',
+      live3: '',
+      liveCount: '',
+      liveHtml: '',
+      liveClass: '',
+      // 营养费
+      nutrition1: '',
+      nutrition2: '',
+      nutrition3: '',
+      nutritionCount: '',
+      nutritionHtml: '',
+      nutritionClass: '',
+      // 护理费
+      nurse1: '',
+      nurse2: '',
+      nurse3: '',
+      nurseCount: '',
+      nurseHtml: '',
+      nurseClass: '',
+      // 交通费
+      traffic1: '',
+      traffic2: '',
+      trafficCount: '',
+      trafficHtml: '',
+      trafficClass: '',
+      // 住宿费
+      stay1: '',
+      stay2: '',
+      stayCount: '',
+      stayHtml: '',
+      stayClass: '',
+      // 残疾赔偿金
+      itemsMore: [
+        {value: 1, name: '城镇', checked: false},
+        {value: 2, name: '农村', checked: false},
+      ],
+      disable1: '',
+      disable2: '',
+      disable3: '',
+      disableCount: '',
+      disableHtml: '',
+      disableClass: '',
+      // 死亡赔偿金
+      itemsMore2: [
+        {value: 1, name: '城镇', checked: false},
+        {value: 2, name: '农村', checked: false},
+      ],
+      death1: '',
+      death2: '',
+      death3: '',
+      deathCount: '',
+      deathHtml: '',
+      deathClass: '',
+      // 丧葬费
+      itemsMore3: [
+        {value: 1, name: '有', checked: false},
+        {value: 2, name: '无', checked: false},
+      ],
+      funeral1: '',
+      funeralCount: '',
+      funeralHtml: '',
+      funeralClass: '',
+      // 被抚养人
+      bring1: '',
+      bring2: '',
+      bring3: '',
+      bringCount: '',
+      bringHtml: '',
+      bringClass: '',
+      // 残疾辅助器具赔偿
+      tool1: '',
+      toolCount: '',
+      toolHtml: '',
+      toolClass: '',
+      // 后期治疗费
+      cure1: '',
+      cureCount: '',
+      cureHtml: '',
+      cureClass: '',
+      // 精神抚慰金
+      comfort1: '',
+      comfortCount: '',
+      comfortHtml: '',
+      comfortClass: '',
+      // 鉴定费
+      authenticate1: '',
+      authenticateCount: '',
+      authenticateHtml: '',
+      authenticateClass: '',
+      // 合计
+      allCount: 0,
+      allHtml: '',
+      strNum: '1',
+      // 适配android和ios
+      android: false,
+      // model组件
+      modelWidth: '',
+      modelHeight: '',
+      modelText: '',
+      modelTitle: '',
+      toggle: false,
+    }
+
+    methods = {
+      addCss(e) {
+        // console.log(e)
+        var self = this
+        _this = this
+        self.flag = e
+        // console.log('537', self.flag)
+        if (e === 1 || e === '1') {
+          self.beforeHtml = '医疗费用'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 2
+            self.setData({organizationClass: 2})
+          } else {
+            self.organizationClass = 2
+            self.setData({organizationClass: 2})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'block'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+
+        } else if (e === 2 || e === '2') {
+          self.beforeHtml = '误工费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 2
+            self.setData({dayClass: 2})
+          } else {
+            self.dayClass = 2
+            self.setData({dayClass: 2})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'block'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 3 || e === '3') {
+          self.beforeHtml = '住院伙食补助费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 2
+            self.setData({liveClass: 2})
+          } else {
+            self.liveClass = 2
+            self.setData({liveClass: 2})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'block'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 4 || e === '4') {
+          self.beforeHtml = '营养费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 2
+            self.setData({nutritionClass: 2})
+          } else {
+            self.nutritionClass = 2
+            self.setData({nutritionClass: 2})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'block'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 5 || e === '5') {
+          self.beforeHtml = '护理费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 2
+            self.setData({nurseClass: 2})
+          } else {
+            self.nurseClass = 2
+            self.setData({nurseClass: 2})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'block'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 6 || e === '6') {
+          self.beforeHtml = '交通费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 2
+            self.setData({trafficClass: 2})
+          } else {
+            self.trafficClass = 2
+            self.setData({trafficClass: 2})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'block'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 7 || e === '7') {
+          self.beforeHtml = '住宿费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 2
+            self.setData({stayClass: 2})
+          } else {
+            self.stayClass = 2
+            self.setData({stayClass: 2})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'block'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 8 || e === '8') {
+          self.beforeHtml = '被抚养人'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 2
+            self.setData({bringClass: 2})
+          } else {
+            self.bringClass = 2
+            self.setData({bringClass: 2})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'block'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 9 || e === '9') {
+          self.beforeHtml = '鉴定费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 2
+            self.setData({authenticateClass: 2})
+          } else {
+            self.authenticateClass = 2
+            self.setData({authenticateClass: 2})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'block'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 10 || e === '10') {
+          self.beforeHtml = '精神抚慰金'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 2
+            self.setData({comfortClass: 2})
+          } else {
+            self.comfortClass = 2
+            self.setData({comfortClass: 2})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'block'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 11 || e === '11') {
+          self.beforeHtml = '残疾辅助器具费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 2
+            self.setData({toolClass: 2})
+          } else {
+            self.toolClass = 2
+            self.setData({toolClass: 2})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'block'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 12 || e === '12') {
+          self.beforeHtml = '残疾赔偿金'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 2
+            self.setData({disableClass: 2})
+          } else {
+            self.disableClass = 2
+            self.setData({disableClass: 2})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'block'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 13 || e === '13') {
+          self.beforeHtml = '死亡赔偿金'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 2
+            self.setData({deathClass: 2})
+          } else {
+            self.deathClass = 2
+            self.setData({deathClass: 2})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'block'
+          self.fourteen = 'none'
+          self.fifteen = 'none'
+        } else if (e === 14 || e === '14') {
+          self.beforeHtml = '丧葬费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 2
+            self.setData({funeralClass: 2})
+          } else {
+            self.funeralClass = 2
+            self.setData({funeralClass: 2})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 1
+            self.setData({cureClass: 1})
+          } else {
+            self.cureClass = ''
+            self.setData({cureClass: ''})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'block'
+          self.fifteen = 'none'
+        } else if (e === 15 || e === '15') {
+          self.beforeHtml = '后期治疗费'
+          // 1
+          if (self.organizationCount) {
+            self.organizationClass = 1
+            self.setData({organizationClass: 1})
+          } else {
+            self.organizationClass = ''
+            self.setData({organizationClass: ''})
+          }
+          // 2
+          if (self.dayCount1) {
+            self.dayClass = 1
+            self.setData({dayClass: 1})
+          } else {
+            self.dayClass = ''
+            self.setData({dayClass: ''})
+          }
+          // 3
+          if (self.liveCount) {
+            self.liveClass = 1
+            self.setData({liveClass: 1})
+          } else {
+            self.liveClass = ''
+            self.setData({liveClass: ''})
+          }
+          // 4
+          if (self.nutritionCount) {
+            self.nutritionClass = 1
+            self.setData({nutritionClass: 1})
+          } else {
+            self.nutritionClass = ''
+            self.setData({nutritionClass: ''})
+          }
+          // 5
+          if (self.nurseCount) {
+            self.nurseClass = 1
+            self.setData({nurseClass: 1})
+          } else {
+            self.nurseClass = ''
+            self.setData({nurseClass: ''})
+          }
+          // 6
+          if (self.trafficCount) {
+            self.trafficClass = 1
+            self.setData({trafficClass: 1})
+          } else {
+            self.trafficClass = ''
+            self.setData({trafficClass: ''})
+          }
+          // 7
+          if (self.stayCount) {
+            self.stayClass = 1
+            self.setData({stayClass: 1})
+          } else {
+            self.stayClass = ''
+            self.setData({stayClass: ''})
+          }
+          // 8
+          if (self.bringCount) {
+            self.bringClass = 1
+            self.setData({bringClass: 1})
+          } else {
+            self.bringClass = ''
+            self.setData({bringClass: ''})
+          }
+          // 9
+          if (self.authenticateCount) {
+            self.authenticateClass = 1
+            self.setData({authenticateClass: 1})
+          } else {
+            self.authenticateClass = ''
+            self.setData({authenticateClass: ''})
+          }
+          // 10
+          if (self.comfortCount) {
+            self.comfortClass = 1
+            self.setData({comfortClass: 1})
+          } else {
+            self.comfortClass = ''
+            self.setData({comfortClass: ''})
+          }
+          // 11
+          if (self.toolCount) {
+            self.toolClass = 1
+            self.setData({toolClass: 1})
+          } else {
+            self.toolClass = ''
+            self.setData({toolClass: ''})
+          }
+          // 12
+          if (self.disableCount) {
+            self.disableClass = 1
+            self.setData({disableClass: 1})
+          } else {
+            self.disableClass = ''
+            self.setData({disableClass: ''})
+          }
+          // 13
+          if (self.deathCount) {
+            self.deathClass = 1
+            self.setData({deathClass: 1})
+          } else {
+            self.deathClass = ''
+            self.setData({deathClass: ''})
+          }
+          // 14
+          if (self.funeralCount) {
+            self.funeralClass = 1
+            self.setData({funeralClass: 1})
+          } else {
+            self.funeralClass = ''
+            self.setData({funeralClass: ''})
+          }
+          // 15
+          if (self.cureCount) {
+            self.cureClass = 2
+            self.setData({cureClass: 2})
+          } else {
+            self.cureClass = 2
+            self.setData({cureClass: 2})
+          }
+
+          // 控制display
+          self.first = 'none'
+          self.second = 'none'
+          self.third = 'none'
+          self.fourth = 'none'
+          self.fifth = 'none'
+          self.sixth = 'none'
+          self.seventh = 'none'
+          self.eighth = 'none'
+          self.ninth = 'none'
+          self.tenth = 'none'
+          self.eleventh = 'none'
+          self.twelve = 'none'
+          self.thirteen = 'none'
+          self.fourteen = 'none'
+          self.fifteen = 'block'
+        }
+      },
+      // 医疗费用
+      organizations1 (e) {
+        // this[field] = detail.value
+        var self = this
+        _this = this
+        self.organization1 = e.detail.value
+        self.setData({organization1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.organization1) {
+          if (new RegExp(regNum).test(self.organization1) === false || new RegExp(regStr).test(self.organization1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.organization1 = ''
+                  self.setData({organization1: ''})
+                  // console.log(self.organization1)
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            // console.log(self.organization1)
+            self.organizationCount = ''
+            self.setData({organizationCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.organization1)) {
+              mi = (Number(self.organization1) * 0.15).toFixed(2)
+              self.organizationCount = mi
+              self.setData({organizationCount: mi})
+            } else {
+              if (new RegExp(regInt).test(self.organization1)) {
+                mi = (Number(self.organization1) * 0.15).toFixed(2)
+                self.organizationCount = mi
+                self.setData({organizationCount: mi})
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      self.organization1 = ''
+                      self.setData({organization1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.organizationCount = ''
+                self.setData({organizationCount: ''})
+              }
+            }
+          }
+        } else {
+          self.organizationCount = ''
+          self.setData({organizationCount: ''})
+        }
+        // console.log('730',self.organizationHtml)
+        self.methods.count()
+      },
+      // 误工费
+      radioChange(val) {
+        var self = this
+        _this = this
+        self.radio = val.detail.value
+        self.day1 = ''
+        self.day2 = ''
+        self.setData({radio: val.detail.value, day1: '', day2: ''})
+        // this.checkNo;
+        var mi
+        if (self.radio === '1') {
+          if (self.day2) {
+            if (self.day1) {
+              mi = (Number(self.day2) * Number(self.day1)).toFixed(2)
+              self.dayCount1 = mi
+              self.setData({dayCount1: mi})
+            } else {
+              self.dayCount1 = 0
+              self.setData({dayCount1: 0})
+            }
+          } else {
+            self.dayCount1 = 0
+            self.setData({dayCount1: 0})
+          }
+        } else if (self.radio === '2') {
+          if (self.day1) {
+            if (self.radio2 === '1') {
+              mi = (100 * Number(self.day1)).toFixed(2)
+              self.dayCount1 = mi
+              self.setData({dayCount1: mi})
+            } else if (self.radio2 === '2') {
+              mi = (50 * Number(self.day1)).toFixed(2)
+              self.dayCount1 = mi
+              self.setData({dayCount1: mi})
+            }
+          } else {
+            self.dayCount1 = ''
+            self.setData({dayCount1: ''})
+          }
+        }
+        self.methods.count()
+      },
+      typeChange: function (val) {
+        var self = this
+        _this = this
+        // console.log(val.detail.value)
+        self.radio2 = val.detail.value
+        self.setData({radio2: val.detail.value})
+        // this.checkNo;
+        var mi
+        if (self.radio === '1') {
+          if (self.day2) {
+            if (self.day1) {
+              mi = (Number(self.day2) * Number(self.day1)).toFixed(2)
+              self.dayCount1 = mi
+              self.setData({dayCount1: mi})
+            } else {
+              self.dayCount1 = 0
+              self.setData({dayCount1: 0})
+            }
+          } else {
+            self.dayCount1 = 0
+            self.setData({dayCount1: 0})
+          }
+        } else if (self.radio === '2') {
+          if (self.day1) {
+            if (self.radio2 === '1') {
+              mi = (100 * Number(self.day1)).toFixed(2)
+              self.dayCount1 = mi
+              self.setData({dayCount1: mi})
+            } else if (self.radio2 === '2') {
+              mi = (50 * Number(self.day1)).toFixed(2)
+              self.dayCount1 = mi
+              self.setData({dayCount1: mi})
+            }
+          } else {
+            self.dayCount1 = ''
+            self.setData({dayCount1: ''})
+          }
+        }
+        self.methods.count()
+      },
+      checkNo: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.day1)
+        if (e) {
+          self.day1 = e.detail.value
+          self.setData({day1: e.detail.value})
+        }
+        // console.log(typeof day1)
+        // var reg = /^[1-9]\d*$/;
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.day1) {
+          if (new RegExp(regNum).test(self.day1) === false || new RegExp(regStr).test(self.day1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.day1 = ''
+                  self.setData({day1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.dayCount1 = ''
+            self.setData({dayCount1: ''})
+          } else {
+            var mi
+            if (self.radio === '1') {
+              if (new RegExp(regInt).test(self.day1)) {
+                if (self.day2) {
+                  if (self.day1) {
+                    mi = (Number(self.day2) * Number(self.day1)).toFixed(2)
+                    self.dayCount1 = mi
+                    self.setData({dayCount1: mi})
+                  } else {
+                    self.dayCount1 = 0
+                    self.setData({dayCount1: 0})
+                  }
+                } else {
+                  self.dayCount1 = 0
+                  self.setData({dayCount1: 0})
+                }
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.day1 = ''
+                      self.setData({day1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.dayCount1 = ''
+                self.setData({dayCount1: ''})
+              }
+            } else if (self.radio === '2') {
+              if (new RegExp(regInt).test(self.day1)) {
+                if (self.day1) {
+                  if (self.radio2 === '1') {
+                    mi = (100 * Number(self.day1)).toFixed(2)
+                    self.dayCount1 = mi
+                    self.setData({dayCount1: mi})
+                  } else if (self.radio2 === '2') {
+                    mi = (50 * Number(self.day1)).toFixed(2)
+                    self.dayCount1 = mi
+                    self.setData({dayCount1: mi})
+                  }
+                } else {
+                  self.dayCount1 = ''
+                  self.setData({dayCount1: ''})
+                }
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.day1 = ''
+                      self.setData({day1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.dayCount1 = ''
+                self.setData({dayCount1: ''})
+              }
+            } else {
+              if (new RegExp(regInt).test(self.day1)) {
+
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.day1 = ''
+                      self.setData({day1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.dayCount1 = ''
+                self.setData({dayCount1: ''})
+              }
+            }
+          }
+        } else {
+          self.dayCount1 = ''
+          self.setData({dayCount1: ''})
+        }
+        self.methods.count()
+      },
+      checkNo2: function (e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.day2)
+        self.day2 = e.detail.value
+        self.setData({day2: e.detail.value})
+        // console.log(typeof day1)
+        // var reg = /^[1-9]\d*$/;
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.day2) {
+          if (new RegExp(regNum).test(self.day2) === false || new RegExp(regStr).test(self.day2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function (res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.day2 = ''
+                  self.setData({day2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.dayCount1 = ''
+            self.setData({dayCount1: ''})
+          } else {
+            var mi
+            if (self.radio === '1') {
+              if (new RegExp(regFloat).test(self.day2) || new RegExp(regInt).test(self.day2)) {
+                if (self.day2) {
+                  if (self.day1) {
+                    mi = (Number(self.day2) * Number(self.day1)).toFixed(2)
+                    self.dayCount1 = mi
+                    self.setData({dayCount1: mi})
+                  } else {
+                    self.dayCount1 = 0
+                    self.setData({dayCount1: 0})
+                  }
+                } else {
+                  self.dayCount1 = 0
+                  self.setData({dayCount1: 0})
+                }
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.day2 = ''
+                      self.setData({day2: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.dayCount1 = ''
+                self.setData({dayCount1: ''})
+              }
+            } else if (self.radio === '2') {
+              if (new RegExp(regFloat).test(self.day2) || new RegExp(regInt).test(self.day2)) {
+                if (self.day1) {
+                  if (self.radio2 === '1') {
+                    mi = (100 * Number(self.day1)).toFixed(2)
+                    self.dayCount1 = mi
+                    self.setData({dayCount1: mi})
+                  } else if (self.radio2 === '2') {
+                    mi = (50 * Number(self.day1)).toFixed(2)
+                    self.dayCount1 = mi
+                    self.setData({dayCount1: mi})
+                  }
+                } else {
+                  self.dayCount1 = ''
+                  self.setData({dayCount1: ''})
+                }
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.day2 = ''
+                      self.setData({day2: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.dayCount1 = ''
+                self.setData({dayCount1: ''})
+              }
+            }
+          }
+        } else {
+          self.dayCount1 = ''
+          self.setData({dayCount1: ''})
+        }
+        self.methods.count()
+      },
+      // 住院伙食补助费
+      lives1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.live1)
+        self.live1 = e.detail.value
+        self.setData({live1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.live1) {
+          if (new RegExp(regNum).test(self.live1) === false || new RegExp(regStr).test(self.live1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function (res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.live1 = ''
+                  self.setData({live1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.liveCount = ''
+            self.setData({liveCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.live1) || new RegExp(regInt).test(self.live1)) {
+              if (self.live2 && self.live3) {
+                mi = (Number(self.live1) * Number(self.live2) * Number(self.live3)).toFixed(2)
+                self.liveCount = mi
+                self.setData({liveCount: mi})
+              } else {
+                self.liveCount = ''
+                self.setData({liveCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.live1 = ''
+                    self.setData({live1: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.liveCount = ''
+              self.setData({liveCount: ''})
+            }
+          }
+        } else {
+          self.liveCount = ''
+          self.setData({liveCount: ''})
+        }
+        self.methods.count()
+      },
+      lives2: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.live2)
+        self.live2 = e.detail.value
+        self.setData({live2: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.live2) {
+          if (new RegExp(regNum).test(self.live2) === false || new RegExp(regStr).test(self.live2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.live2 = ''
+                  self.setData({live2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.liveCount = ''
+            self.setData({liveCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.live2)) {
+              if (self.live1 && self.live3) {
+                mi = (Number(self.live1) * Number(self.live2) * Number(self.live3)).toFixed(2)
+                self.liveCount = mi
+                self.setData({liveCount: mi})
+              } else {
+                self.liveCount = ''
+                self.setData({liveCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.live2 = ''
+                    self.setData({live2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.liveCount = ''
+              self.setData({liveCount: ''})
+            }
+          }
+        } else {
+          self.liveCount = ''
+          self.setData({liveCount: ''})
+        }
+        self.methods.count()
+      },
+      lives3: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.live3)
+        self.live3 = e.detail.value
+        self.setData({live3: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.live3) {
+          if (new RegExp(regNum).test(self.live3) === false || new RegExp(regStr).test(self.live3) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.live3 = ''
+                  self.setData({live3: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.liveCount = ''
+            self.setData({liveCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.live3)) {
+              if (self.live1 && self.live2) {
+                mi = (Number(self.live1) * Number(self.live2) * Number(self.live3)).toFixed(2)
+                self.liveCount = mi
+                self.setData({liveCount: mi})
+              } else {
+                self.liveCount = ''
+                self.setData({liveCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.live3 = ''
+                    self.setData({live3: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.liveCount = ''
+              self.setData({liveCount: ''})
+            }
+          }
+        } else {
+          self.liveCount = ''
+          self.setData({liveCount: ''})
+        }
+        self.methods.count()
+      },
+      // 营养费
+      nutritions1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.nutrition1)
+        self.nutrition1 = e.detail.value
+        self.setData({nutrition1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.nutrition1) {
+          if (new RegExp(regNum).test(self.nutrition1) === false || new RegExp(regStr).test(self.nutrition1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.nutrition1 = ''
+                  self.setData({nutrition1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.nutritionCount = ''
+            self.setData({nutritionCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.nutrition1) || new RegExp(regInt).test(self.nutrition1)) {
+              if (self.nutrition2 && self.nutrition3) {
+                mi = (Number(self.nutrition1) * Number(self.nutrition2) * Number(self.nutrition3)).toFixed(2)
+                self.nutritionCount = mi
+                self.setData({nutritionCount: mi})
+              } else {
+                self.nutritionCount = ''
+                self.setData({nutritionCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.nutrition1 = ''
+                    self.setData({nutrition1: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.nutritionCount = ''
+              self.setData({nutritionCount: ''})
+            }
+          }
+        } else {
+          self.nutritionCount = ''
+          self.setData({nutritionCount: ''})
+        }
+        self.methods.count()
+      },
+      nutritions2: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.nutrition2)
+        self.nutrition2 = e.detail.value
+        self.setData({nutrition2: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.nutrition2) {
+          if (new RegExp(regNum).test(self.nutrition2) === false || new RegExp(regStr).test(self.nutrition2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.nutrition2 = ''
+                  self.setData({nutrition2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.nutritionCount = ''
+            self.setData({nutritionCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.nutrition2)) {
+              if (self.nutrition1 && self.nutrition3) {
+                mi = (Number(self.nutrition1) * Number(self.nutrition2) * Number(self.nutrition3)).toFixed(2)
+                self.nutritionCount = mi
+                self.setData({nutritionCount: mi})
+              } else {
+                self.nutritionCount = ''
+                self.setData({nutritionCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.nutrition2 = ''
+                    self.setData({nutrition2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.nutritionCount = ''
+              self.setData({nutritionCount: ''})
+            }
+          }
+        } else {
+          self.nutritionCount = ''
+          self.setData({nutritionCount: ''})
+        }
+        self.methods.count()
+      },
+      nutritions3: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.nutrition3)
+        self.nutrition3 = e.detail.value
+        self.setData({nutrition3: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.nutrition3) {
+          if (new RegExp(regNum).test(self.nutrition3) === false || new RegExp(regStr).test(self.nutrition3) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.nutrition3 = ''
+                  self.setData({nutrition3: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.nutritionCount = ''
+            self.setData({nutritionCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.nutrition3)) {
+              if (self.nutrition1 && self.nutrition2) {
+                mi = (Number(self.nutrition1) * Number(self.nutrition2) * Number(self.nutrition3)).toFixed(2)
+                self.nutritionCount = mi
+                self.setData({nutritionCount: mi})
+              } else {
+                self.nutritionCount = ''
+                self.setData({nutritionCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.nutrition3 = ''
+                    self.setData({nutrition3: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.nutritionCount = ''
+              self.setData({nutritionCount: ''})
+            }
+          }
+        } else {
+          self.nutritionCount = ''
+          self.setData({nutritionCount: ''})
+        }
+        self.methods.count()
+      },
+      // 护理费
+      nurses1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.nurse1)
+        self.nurse1 = e.detail.value
+        self.setData({
+          nurse1: e.detail.value
+        })
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.nurse1) {
+          if (new RegExp(regNum).test(self.nurse1) === false || new RegExp(regStr).test(self.nurse1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.nurse1 = ''
+                  self.setData({nurse1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.nurseCount = ''
+            self.setData({nurseCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.nurse1) || new RegExp(regInt).test(self.nurse1)) {
+              if (self.nurse2 && self.nurse3) {
+                mi = (Number(self.nurse1) * Number(self.nurse2) * Number(self.nurse3)).toFixed(2)
+                self.nurseCount = mi
+                self.setData({nurseCount: mi})
+              } else {
+                self.nurseCount = ''
+                self.setData({nurseCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.nurse1 = ''
+                    self.setData({nurse1: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.nurseCount = ''
+              self.setData({nurseCount: ''})
+            }
+          }
+        } else {
+          self.nutritionCount = ''
+          self.setData({nutritionCount: ''})
+        }
+        self.methods.count()
+      },
+      nurses2: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.nurse2)
+        self.nurse2 = e.detail.value
+        self.setData({nurse2: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.nurse2) {
+          if (new RegExp(regNum).test(self.nurse2) === false || new RegExp(regStr).test(self.nurse2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.nurse2 = ''
+                  self.setData({nurse2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.nurseCount = ''
+            self.setData({nurseCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.nurse2)) {
+              if (self.nurse1 && self.nurse3) {
+                mi = (Number(self.nurse1) * Number(self.nurse2) * Number(self.nurse3)).toFixed(2)
+                self.nurseCount = mi
+                self.setData({nurseCount: mi})
+              } else {
+                self.nurseCount = ''
+                self.setData({nurseCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.nurse2 = ''
+                    self.setData({nurse2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.nurseCount = ''
+              self.setData({nurseCount: ''})
+            }
+          }
+        } else {
+          self.nurseCount = ''
+          self.setData({nurseCount: ''})
+        }
+        self.methods.count()
+      },
+      nurses3: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.nurse3)
+        self.nurse3 = e.detail.value
+        self.setData({nurse3: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.nurse3) {
+          if (new RegExp(regNum).test(self.nurse3) === false || new RegExp(regStr).test(self.nurse3) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.nurse3 = ''
+                  self.setData({nurse3: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.nurseCount = ''
+            self.setData({nurseCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.nurse3)) {
+              if (self.nurse1 && self.nurse2) {
+                mi = (Number(self.nurse1) * Number(self.nurse2) * Number(self.nurse3)).toFixed(2)
+                self.nurseCount = mi
+                self.setData({nurseCount: mi})
+              } else {
+                self.nurseCount = ''
+                self.setData({nurseCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.nurse3 = ''
+                    self.setData({nurse3: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.nurseCount = ''
+              self.setData({nurseCount: ''})
+            }
+          }
+        } else {
+          self.nurseCount = ''
+          self.setData({nurseCount: ''})
+        }
+        self.methods.count()
+      },
+      // 交通费
+      traffics1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.traffic1)
+        self.traffic1 = e.detail.value
+        self.setData({traffic1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.traffic1) {
+          if (new RegExp(regNum).test(self.traffic1) === false || new RegExp(regStr).test(self.traffic1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.traffic1 = ''
+                  self.setData({traffic1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.trafficCount = ''
+            self.setData({trafficCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.traffic1)) {
+              mi = (Number(self.traffic1)).toFixed(2)
+              self.trafficCount = mi
+              self.setData({trafficCount: mi})
+            } else {
+              if (new RegExp(regInt).test(self.traffic1)) {
+                mi = (Number(self.traffic1)).toFixed(2)
+                self.trafficCount = mi
+                self.setData({trafficCount: mi})
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.traffic1 = ''
+                      self.setData({traffic1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.trafficCount = ''
+                self.setData({trafficCount: ''})
+              }
+            }
+          }
+        } else {
+          self.trafficCount = ''
+          self.setData({trafficCount: ''})
+        }
+        self.methods.count()
+      },
+      // 住宿费
+      stays1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.stay1)
+        self.stay1 = e.detail.value
+        self.setData({stay1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.stay1) {
+          if (new RegExp(regNum).test(self.stay1) === false || new RegExp(regStr).test(self.stay1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.stay1 = ''
+                  self.setData({stay1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.stayCount = ''
+            self.setData({stayCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.stay1)) {
+              if (self.stay1 && self.stay2) {
+                mi = (Number(self.stay1) * Number(self.stay2) * 200).toFixed(2)
+                self.stayCount = mi
+                self.setData({stayCount: mi})
+              } else {
+                self.stayCount = ''
+                self.setData({stayCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.stay1 = ''
+                    self.setData({stay1: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.stayCount = ''
+              self.setData({stayCount: ''})
+            }
+          }
+        } else {
+          self.stayCount = ''
+          self.setData({stayCount: ''})
+        }
+        self.methods.count()
+      },
+      stays2: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.stay2)
+        self.stay2 = e.detail.value
+        self.setData({stay2: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.stay2) {
+          if (new RegExp(regNum).test(self.stay2) === false || new RegExp(regStr).test(self.stay2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.stay2 = ''
+                  self.setData({stay2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.stayCount = ''
+            self.setData({stayCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.stay2)) {
+              if (self.stay1 && self.stay2) {
+                mi = (Number(self.stay1) * Number(self.stay2) * 200).toFixed(2)
+                self.stayCount = mi
+                self.setData({stayCount: mi})
+              } else {
+                self.stayCount = ''
+                self.setData({stayCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.stay2 = ''
+                    self.setData({stay2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.stayCount = ''
+              self.setData({stayCount: ''})
+            }
+          }
+        } else {
+          self.stayCount = ''
+          self.setData({stayCount: ''})
+        }
+        self.methods.count()
+      },
+      // 被抚养人
+      brings1: function (e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.bring1)
+        self.bring1 = e.detail.value
+        self.setData({bring1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.bring1) {
+          if (new RegExp(regNum).test(self.bring1) === false || new RegExp(regStr).test(self.bring1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.bring1 = ''
+                  self.setData({bring1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.bringCount = ''
+            self.setData({bringCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.bring1) || new RegExp(regInt).test(self.bring1)) {
+              if (self.bring2 && self.bring3) {
+                mi = (Number(self.bring1) * Number(self.bring2) * Number(self.bring3) / 100).toFixed(2)
+                self.bringCount = mi
+                self.setData({bringCount: mi})
+              } else {
+                self.bringCount = ''
+                self.setData({bringCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.bring1 = ''
+                    self.setData({bring1: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.bringCount = ''
+              self.setData({bringCount: ''})
+            }
+          }
+        } else {
+          self.bringCount = ''
+          self.setData({bringCount: ''})
+        }
+        self.methods.count()
+      },
+      brings2: function (e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.bring2)
+        self.bring2 = e.detail.value
+        self.setData({bring2: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.bring2) {
+          if (new RegExp(regNum).test(self.bring2) === false || new RegExp(regStr).test(self.bring2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.bring2 = ''
+                  self.setData({bring2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.bringCount = ''
+            self.setData({bringCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.bring2)) {
+              if (self.bring1 && self.bring3) {
+                mi = (Number(self.bring1) * Number(self.bring2) * Number(self.bring3) / 100).toFixed(2)
+                self.bringCount = mi
+                self.setData({bringCount: mi})
+              } else {
+                self.bringCount = ''
+                self.setData({bringCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.bring2 = ''
+                    self.setData({bring2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.bringCount = ''
+              self.setData({bringCount: ''})
+            }
+          }
+        } else {
+          self.bringCount = ''
+          self.setData({bringCount: ''})
+        }
+        self.methods.count()
+      },
+      brings3: function (e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.bring3)
+        self.bring3 = e.detail.value
+        self.setData({bring3: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        // var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        var regMi = /^(?:0|[1-9][0-9]?|100)$/
+        if (self.bring3) {
+          if (new RegExp(regNum).test(self.bring3) === false || new RegExp(regStr).test(self.bring3) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.bring3 = ''
+                  self.setData({bring3: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.bringCount = ''
+            self.setData({bringCount: ''})
+          } else {
+            var mi
+            if (!new RegExp(regMi).test(self.bring3) === false) {
+              if (self.bring1 && self.bring2) {
+                mi = (Number(self.bring1) * Number(self.bring2) * Number(self.bring3) / 100).toFixed(2)
+                self.bringCount = mi
+                self.setData({bringCount: mi})
+              } else {
+                self.bringCount = ''
+                self.setData({bringCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '请输入0到100之间的数值',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.bring3 = ''
+                    self.setData({bring3: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.bringCount = ''
+              self.setData({bringCount: ''})
+            }
+          }
+        } else {
+          self.bringCount = ''
+          self.setData({bringCount: ''})
+        }
+        self.methods.count()
+      },
+      // 鉴定费
+      authenticates1: function (e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.authenticate1)
+        self.authenticate1 = e.detail.value
+        self.setData({authenticate1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.authenticate1) {
+          if (new RegExp(regNum).test(self.authenticate1) === false || new RegExp(regStr).test(self.authenticate1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.authenticate1 = ''
+                  self.setData({authenticate1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.authenticateCount = ''
+            self.setData({authenticateCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.authenticate1)) {
+              mi = (Number(self.authenticate1)).toFixed(2)
+              self.authenticateCount = mi
+              self.setData({authenticateCount: mi})
+            } else {
+              if (new RegExp(regInt).test(self.authenticate1)) {
+                mi = (Number(self.authenticate1)).toFixed(2)
+                self.authenticateCount = mi
+                self.setData({authenticateCount: mi})
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.authenticate1 = ''
+                      self.setData({authenticate1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.authenticateCount = ''
+                self.setData({authenticateCount: ''})
+              }
+            }
+          }
+        } else {
+          self.authenticateCount = ''
+          self.setData({authenticateCount: ''})
+        }
+        self.methods.count()
+      },
+      // 精神抚慰金
+      comforts1: function (e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.comfort1)
+        self.comfort1 = e.detail.value
+        self.setData({comfort1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.comfort1) {
+          if (new RegExp(regNum).test(self.comfort1) === false || new RegExp(regStr).test(self.comfort1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.comfort1 = ''
+                  self.setData({comfort1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.comfortCount = ''
+            self.setData({comfortCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.comfort1)) {
+              mi = (Number(self.comfort1)).toFixed(2)
+              self.comfortCount = mi
+              self.setData({comfortCount: mi})
+            } else {
+              if (new RegExp(regInt).test(self.comfort1)) {
+                mi = (Number(self.comfort1)).toFixed(2)
+                self.comfortCount = mi
+                self.setData({comfortCount: mi})
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.comfort1 = ''
+                      self.setData({comfort1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.comfortCount = ''
+                self.setData({comfortCount: ''})
+              }
+            }
+          }
+        } else {
+          self.comfortCount = ''
+          self.setData({comfortCount: ''})
+        }
+        self.methods.count()
+      },
+      // 残疾辅助器具费
+      tools1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.tool1)
+        self.tool1 = e.detail.value
+        self.setData({tool1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.tool1) {
+          if (new RegExp(regNum).test(self.tool1) === false || new RegExp(regStr).test(self.tool1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.tool1 = ''
+                  self.setData({tool1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.toolCount = ''
+            self.setData({toolCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.tool1)) {
+              mi = (Number(self.tool1)).toFixed(2)
+              self.toolCount = mi
+              self.setData({toolCount: mi})
+            } else {
+              if (new RegExp(regInt).test(self.tool1)) {
+                mi = (Number(self.tool1)).toFixed(2)
+                self.toolCount = mi
+                self.setData({toolCount: mi})
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.tool1 = ''
+                      self.setData({tool1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.toolCount = ''
+                self.setData({toolCount: ''})
+              }
+            }
+          }
+        } else {
+          self.toolCount = ''
+          self.setData({toolCount: ''})
+        }
+        self.methods.count()
+      },
+      // 残疾赔偿金
+      disables1: function(e) {
+        var self = this
+        _this = this
+        // console.log(e)
+        self.disable1 = e.detail.value
+        self.setData({disable1: e.detail.value})
+        // console.log('first', self.disable1)
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        // var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.disable1) {
+          if (new RegExp(regNum).test(self.disable1) === false || new RegExp(regStr).test(self.disable1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.disable1 = ''
+                  self.setData({disable1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.disableCount = ''
+            self.setData({disableCount: ''})
+          } else {
+            if (self.disable2 && self.disable3) {
+              var mi
+              if (self.disable1 === '1' || self.disable1 === 1) {
+                mi = (30996 * Number(self.disable2) * Number(self.disable3) / 100).toFixed(2)
+                self.disableCount = mi
+                self.setData({disableCount: mi})
+              } else if (self.disable1 === '2' || self.disable1 === 2) {
+                mi = (9862 * Number(self.disable2) * Number(self.disable3) / 100).toFixed(2)
+                self.disableCount = mi
+                self.setData({disableCount: mi})
+              }
+            } else {
+              self.disableCount = ''
+              self.setData({disableCount: ''})
+            }
+          }
+        } else {
+          self.disableCount = ''
+          self.setData({disableCount: ''})
+        }
+        self.methods.count()
+      },
+      disables2: function(e) {
+        var self = this
+        _this = this
+
+        self.disable2 = e.detail.value
+        self.setData({disable2: e.detail.value})
+        // console.log('seconed', self.disable2)
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.disable2) {
+          if (new RegExp(regNum).test(self.disable2) === false || new RegExp(regStr).test(self.disable2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.disable2 = ''
+                  self.setData({disable2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.disableCount = ''
+            self.setData({disableCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.disable2)) {
+              if (self.disable1 && self.disable3) {
+                if (self.disable1 === '1' || self.disable1 === 1) {
+                  mi = (30996 * Number(self.disable2) * Number(self.disable3) / 100).toFixed(2)
+                  self.disableCount = mi
+                  self.setData({disableCount: mi})
+                } else if (self.disable1 === '2' || self.disable1 === 2) {
+                  mi = (9862 * Number(self.disable2) * Number(self.disable3) / 100).toFixed(2)
+                  self.disableCount = mi
+                  self.setData({disableCount: mi})
+                }
+              } else {
+                self.disableCount = ''
+                self.setData({disableCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.disable2 = ''
+                    self.setData({disable2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.disableCount = ''
+              self.setData({disableCount: ''})
+            }
+          }
+        } else {
+          self.disableCount = ''
+          self.setData({disableCount: ''})
+        }
+        console.log(4389, self.disable1, self.disable2, self.disable3)
+        self.methods.count()
+      },
+      disables3: function(e) {
+        var self = this
+        _this = this
+
+        self.disable3 = e.detail.value
+        self.setData({disable3: e.detail.value})
+        // console.log('three', self.disable3)
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        // var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        var regMi = /^(?:0|[1-9][0-9]?|100)$/
+        if (self.disable3) {
+          if (new RegExp(regNum).test(self.disable3) === false || new RegExp(regStr).test(self.disable3) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.disable3 = ''
+                  self.setData({disable3: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.disableCount = ''
+            self.setData({disableCount: ''})
+          } else {
+            var mi
+            if (!new RegExp(regMi).test(self.disable3) === false) {
+              if (self.disable1 && self.disable2) {
+                if (self.disable1 === '1' || self.disable1 === 1) {
+                  mi = (30996 * Number(self.disable2) * Number(self.disable3) / 100).toFixed(2)
+                  self.disableCount = mi
+                  self.setData({disableCount: mi})
+                } else if (self.disable1 === '2' || self.disable1 === 2) {
+                  mi = (9862 * Number(self.disable2) * Number(self.disable3) / 100).toFixed(2)
+                  self.disableCount = mi
+                  self.setData({disableCount: mi})
+                } else {
+                  self.disableCount = ''
+                  self.setData({disableCount: ''})
+                }
+              } else {
+                self.disableCount = ''
+                self.setData({disableCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '请输入0到100之间的数值',
+                showCancel: false,
+                success: function (res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.disable3 = ''
+                    self.setData({disable3: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.disableCount = ''
+              self.setData({disableCount: ''})
+            }
+          }
+        } else {
+          self.disableCount = ''
+          self.setData({disableCount: ''})
+        }
+        console.log(4464, self.disable1, self.disable2, self.disable3)
+        self.methods.count()
+      },
+      // 死亡赔偿金
+      deaths1: function (e) {
+        var self = this
+        _this = this
+        // console.log(e)
+        self.death1 = e.detail.value
+        self.setData({death1: e.detail.value})
+        // console.log('first', self.death1)
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        // var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.death1) {
+          if (new RegExp(regNum).test(self.death1) === false || new RegExp(regStr).test(self.death1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.death1 = ''
+                  self.setData({death1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.deathCount = ''
+            self.setData({deathCount: ''})
+          } else {
+            var mi
+            if (self.death2 && self.death3) {
+              if (self.death1 === '1' || self.death1 === 1) {
+                mi = (30996 * Number(self.death2) * Number(self.death3) / 100).toFixed(2)
+                self.deathCount = mi
+                self.setData({deathCount: mi})
+              } else if (self.death1 === '2' || self.death1 === 2) {
+                mi = (9862 * Number(self.death2) * Number(self.death3) / 100).toFixed(2)
+                self.deathCount = mi
+                self.setData({deathCount: mi})
+              }
+            } else {
+              self.deathCount = ''
+              self.setData({deathCount: ''})
+            }
+          }
+        } else {
+          self.deathCount = ''
+          self.setData({deathCount: ''})
+        }
+        self.methods.count()
+      },
+      deaths2: function (e) {
+        var self = this
+        _this = this
+
+        self.death2 = e.detail.value
+        self.setData({death2: e.detail.value})
+        // console.log('seconed', self.death2)
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.death2) {
+          if (new RegExp(regNum).test(self.death2) === false || new RegExp(regStr).test(self.death2) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.death2 = ''
+                  self.setData({death2: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.deathCount = ''
+            self.setData({deathCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regInt).test(self.death2)) {
+              if (self.death1 && self.death3) {
+                if (self.death1 === '1' || self.death1 === 1) {
+                  mi = (30996 * Number(self.death2) * Number(self.death3) / 100).toFixed(2)
+                  self.deathCount = mi
+                  self.setData({deathCount: mi})
+                } else if (self.death1 === '2' || self.death1 === 2) {
+                  mi = (9862 * Number(self.death2) * Number(self.death3) / 100).toFixed(2)
+                  self.deathCount = mi
+                  self.setData({deathCount: mi})
+                }
+              } else {
+                self.deathCount = ''
+                self.setData({deathCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '输入值太大或者存在小数点，请重新输入百万一下的数字且为整数',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.death2 = ''
+                    self.setData({death2: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.deathCount = ''
+              self.setData({deathCount: ''})
+            }
+          }
+        } else {
+          self.deathCount = ''
+          self.setData({deathCount: ''})
+        }
+        self.methods.count()
+      },
+      deaths3: function (e) {
+        var self = this
+        _this = this
+
+        self.death3 = e.detail.value
+        self.setData({death3: e.detail.value})
+        // console.log('three', self.death3)
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        // var regInt = /(^[0-9]{1,7}$)/
+        // var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        var regMi = /^(?:0|[1-9][0-9]?|100)$/
+        if (self.death3) {
+          if (new RegExp(regNum).test(self.death3) === false || new RegExp(regStr).test(self.death3) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.death3 = ''
+                  self.setData({death3: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.deathCount = ''
+            self.setData({deathCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regMi).test(self.death3)) {
+              if (self.death1 && self.death2) {
+                if (self.death1 === '1' || self.death1 === 1) {
+                  mi = (30996 * Number(self.death2) * Number(self.death3) / 100).toFixed(2)
+                  self.deathCount = mi
+                  self.setData({deathCount: mi})
+                } else if (self.death1 === '2' || self.death1 === 2) {
+                  mi = (9862 * Number(self.death2) * Number(self.death3) / 100).toFixed(2)
+                  self.deathCount = mi
+                  self.setData({deathCount: mi})
+                } else {
+                  self.deathCount = ''
+                  self.setData({deathCount: ''})
+                }
+              } else {
+                self.deathCount = ''
+                self.setData({deathCount: ''})
+              }
+            } else {
+              wx.showModal({
+                title: '提示',
+                content: '请输入0到100之间的数值',
+                showCancel: false,
+                success: function(res) {
+                  if (res.confirm) {
+                    console.log('用户点击确定')
+                    self.death3 = ''
+                    self.setData({death3: ''})
+                    self.methods.count()
+                  } else if (res.cancel) {
+                    console.log('用户点击取消')
+                  }
+                }
+              })
+              self.deathCount = ''
+              self.setData({deathCount: ''})
+            }
+          }
+        } else {
+          self.deathCount = ''
+          self.setData({deathCount: ''})
+        }
+        self.methods.count()
+      },
+      // 丧葬费
+      funerals1: function(e) {
+        var self = this
+        _this = this
+        // console.log(e)
+        self.funeral1 = e.detail.value
+        self.setData({funeral1: e.detail.value})
+        // console.log('first',self.funeral1)
+        if (self.funeral1 === '1' || self.funeral1 === 1) {
+          self.funeralCount = 47844
+          self.setData({funeralCount: 47844})
+        } else if (self.funeral1 === '2' || self.funeral1 === 2) {
+          self.funeralCount = ''
+          self.setData({funeralCount: ''})
+        }
+        self.methods.count()
+      },
+      // 后期治疗费
+      cures1: function(e) {
+        var self = this
+        _this = this
+        // console.log(typeof self.cure1)
+        self.cure1 = e.detail.value
+        self.setData({cure1: e.detail.value})
+        var regNum = /^(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*))$/
+        var regStr = /^[A-Za-z]+$ /
+        var regInt = /(^[0-9]{1,7}$)/
+        var regFloat = /(^[0-9]{1,7}\.([0-9]{1,2})$)/
+        if (self.cure1) {
+          if (new RegExp(regNum).test(self.cure1) === false || new RegExp(regStr).test(self.cure1) === true) {
+            wx.showModal({
+              title: '提示',
+              content: '请输入正确的格式',
+              showCancel: false,
+              success: function(res) {
+                if (res.confirm) {
+                  console.log('用户点击确定')
+                  self.cure1 = ''
+                  self.setData({cure1: ''})
+                  self.methods.count()
+                } else if (res.cancel) {
+                  console.log('用户点击取消')
+                }
+              }
+            })
+            self.cureCount = ''
+            self.setData({cureCount: ''})
+          } else {
+            var mi
+            if (new RegExp(regFloat).test(self.cure1)) {
+              mi = (Number(self.cure1)).toFixed(2)
+              self.cureCount = mi
+              self.setData({cureCount: mi})
+            } else {
+              if (new RegExp(regInt).test(self.cure1)) {
+                mi = (Number(self.cure1)).toFixed(2)
+                self.cureCount = mi
+                self.setData({cureCount: mi})
+              } else {
+                wx.showModal({
+                  title: '提示',
+                  content: '输入值太大或者小数点位数太多，请重新输入百万一下的数字且最多保留两位小数',
+                  showCancel: false,
+                  success: function(res) {
+                    if (res.confirm) {
+                      console.log('用户点击确定')
+                      self.cure1 = ''
+                      self.setData({cure1: ''})
+                      self.methods.count()
+                    } else if (res.cancel) {
+                      console.log('用户点击取消')
+                    }
+                  }
+                })
+                self.cureCount = ''
+                self.setData({cureCount: ''})
+              }
+            }
+
+          }
+        } else {
+          self.cureCount = ''
+          self.setData({cureCount: ''})
+        }
+        self.methods.count()
+      },
+
+      resetAll: function () {
+        var self = this
+        _this = this
+        self.organization1 = ''
+        self.organizationCount = ''
+        self.setData({organization1: ''})
+        self.setData({organizationCount: ''})
+        self.day1 = ''
+        self.day2 = ''
+        self.dayCount1 = ''
+        self.setData({day1: ''})
+        self.setData({day2: ''})
+        self.setData({dayCount1: ''})
+        self.live1 = ''
+        self.live2 = ''
+        self.live3 = ''
+        self.liveCount = ''
+        self.setData({live1: ''})
+        self.setData({live2: ''})
+        self.setData({live1: ''})
+        self.setData({liveCount: ''})
+        self.nutrition1 = ''
+        self.nutrition2 = ''
+        self.nutrition3 = ''
+        self.nutritionCount = ''
+        self.setData({nutrition1: ''})
+        self.setData({nutrition2: ''})
+        self.setData({nutrition3: ''})
+        self.setData({nutritionCount: ''})
+        self.nurse1 = ''
+        self.nurse2 = ''
+        self.nurse3 = ''
+        self.nurseCount = ''
+        self.setData({nurse1: ''})
+        self.setData({nurse2: ''})
+        self.setData({nurse3: ''})
+        self.setData({nurseCount: ''})
+        self.traffic1 = ''
+        self.traffic2 = ''
+        self.trafficCount = ''
+        self.setData({traffic1: ''})
+        self.setData({traffic2: ''})
+        self.setData({trafficCount: ''})
+        self.stay1 = ''
+        self.stay2 = ''
+        self.stayCount = ''
+        self.setData({stay1: ''})
+        self.setData({stay2: ''})
+        self.setData({stayCount: ''})
+        self.disable1 = ''
+        self.disable2 = ''
+        self.disable3 = ''
+        self.disableCount = ''
+        self.setData({disable1: ''})
+        self.setData({disable2: ''})
+        self.setData({disable3: ''})
+        self.setData({disableCount: ''})
+        self.death1 = ''
+        self.death2 = ''
+        self.death3 = ''
+        self.deathCount = ''
+        self.setData({death1: ''})
+        self.setData({death2: ''})
+        self.setData({death3: ''})
+        self.setData({deathCount: ''})
+        self.funeral1 = '2'
+        self.funeralCount = ''
+        self.setData({funeral1: ''})
+        self.setData({funeralCount: ''})
+        self.bring1 = ''
+        self.bring2 = ''
+        self.bring3 = ''
+        self.bringCount = ''
+        self.setData({bring1: ''})
+        self.setData({bring2: ''})
+        self.setData({bring3: ''})
+        self.setData({bringCount: ''})
+        self.tool1 = ''
+        self.toolCount = ''
+        self.setData({tool1: ''})
+        self.setData({toolCount: ''})
+        self.cure1 = ''
+        self.cureCount = ''
+        self.setData({cure1: ''})
+        self.setData({cureCount: ''})
+        self.comfort1 = ''
+        self.comfortCount = ''
+        self.setData({comfort1: ''})
+        self.setData({comfortCount: ''})
+        self.authenticate1 = ''
+        self.authenticateCount = ''
+        self.setData({authenticate1: ''})
+        self.setData({authenticateCount: ''})
+        self.radio = ''
+        self.setData({radio: ''})
+        self.radio2 = ''
+        self.setData({radio2: ''})
+        self.items = [
+          {value: 1, name: '是', checked: false},
+          {value: 2, name: '否', checked: false},
+        ]
+        self.items2 = [
+          {value: 1, name: '城镇', checked: false},
+          {value: 2, name: '农村', checked: false},
+        ]
+        self.setData({items: [
+            {value: 1, name: '是', checked: false},
+            {value: 2, name: '否', checked: false},
+        ]})
+        self.setData({items2: [
+            {value: 1, name: '城镇', checked: false},
+            {value: 2, name: '农村', checked: false},
+        ]})
+        self.itemsMore = [
+          {value: 1, name: '城镇', checked: false},
+          {value: 2, name: '农村', checked: false},
+        ]
+        self.setData({itemsMore: [
+            {value: 1, name: '城镇', checked: false},
+            {value: 2, name: '农村', checked: false},
+        ]})
+        self.itemsMore2 = [
+          {value: 1, name: '城镇', checked: false},
+          {value: 2, name: '农村', checked: false},
+        ]
+        self.setData({itemsMore2: [
+            {value: 1, name: '城镇', checked: false},
+            {value: 2, name: '农村', checked: false},
+        ]})
+        self.itemsMore3 = [
+          {value: 1, name: '有', checked: false},
+          {value: 2, name: '无', checked: false},
+        ]
+        self.setData({itemsMore3: [
+            {value: 1, name: '有', checked: false},
+            {value: 2, name: '无', checked: false},
+        ]})
+
+        self.allCount = '0.00'
+        self.setData({allCount: ''})
+        self.methods.count()
+
+        self.flag = 1
+        self.setData({flag: 1})
+        // 重置tab切换
+        // 1
+        self.organizationClass = 2
+        self.setData({organizationClass: 2})
+        // 2
+        self.dayClass = ''
+        self.setData({dayClass: ''})
+        // 3
+        self.liveClass = ''
+        self.setData({liveClass: ''})
+        // 4
+        self.nutritionClass = ''
+        self.setData({nutritionClass: ''})
+        // 5
+        self.nurseClass = ''
+        self.setData({nurseClass: ''})
+        // 6
+        self.trafficClass = ''
+        self.setData({trafficClass: ''})
+        // 7
+        self.stayClass = ''
+        self.setData({stayClass: ''})
+        // 8
+        self.bringClass = ''
+        self.setData({bringClass: ''})
+        // 9
+        self.authenticateClass = ''
+        self.setData({authenticateClass: ''})
+        // 10
+        self.comfortClass = ''
+        self.setData({comfortClass: ''})
+        // 11
+        self.toolClass = ''
+        self.setData({toolClass: ''})
+        // 12
+        self.disableClass = ''
+        self.setData({disableClass: ''})
+        // 13
+        self.deathClass = ''
+        self.setData({deathClass: ''})
+        // 14
+        self.funeralClass = ''
+        self.setData({funeralClass: ''})
+        // 15
+        self.cureClass = ''
+        self.setData({cureClass: ''})
+        self.first = 'block'
+        self.second = 'none'
+        self.third = 'none'
+        self.fourth = 'none'
+        self.fifth = 'none'
+        self.sixth = 'none'
+        self.seventh = 'none'
+        self.eighth = 'none'
+        self.ninth = 'none'
+        self.tenth = 'none'
+        self.eleventh = 'none'
+        self.twelve = 'none'
+        self.thirteen = 'none'
+        self.fourteen = 'none'
+        self.fifteen = 'none'
+        console.log(4941, self.disable1)
+      },
+      copy: function() {
+        var self = this
+        var data = self.organizationHtml + self.dayHtml + self.liveHtml + self.nutritionHtml + self.nurseHtml + self.trafficHtml + self.stayHtml +
+          self.disableHtml + self.deathHtml + self.funeralHtml + self.bringHtml + self.toolHtml + self.cureHtml + self.comfortHtml + self.authenticateHtml + self.allHtml
+        wx.setClipboardData({
+          data: data,
+          success: function(res) {
+            console.log('copy', res)
+          }
+        })
+      },
+      count: function() {
+        var self = _this
+        // 医疗机构及费用
+        if (self.organizationCount) {
+          var html = '医疗机构及费用：保险赔偿(' + (self.organization1 || 0) + ')*15%=' + (self.organizationCount || 0) + '；'
+          self.organizationHtml = html
+          self.setData({organizationHtml: html})
+        } else {
+          self.organizationHtml = ''
+          self.setData({organizationHtml: ''})
+        }
+        // console.log('html', organizationHtml)
+
+        // 误工费
+        if (self.dayCount1) {
+          if (self.radio === '1') {
+            self.dayHtml = '误工费：赔偿天数(' + (self.day1 || 0) + ')*' + '同行业标准(' + (self.day2 || 0) + ')=' + (self.dayCount1 || 0) + '；'
+          } else if (self.radio === '2') {
+            if (self.radio2 === '1') {
+              self.dayHtml = '误工费：赔偿天数(' + (self.day1 || 0) + ')*' + '城镇户口（' + 100 + '）=' + (self.dayCount1 || 0) + '；'
+            } else if (self.radio2 === '2') {
+              self.dayHtml = '误工费：赔偿天数(' + (self.day1 || 0) + ')*' + '农村户口（' + 50 + '）=' + (self.dayCount1 || 0) + '；'
+            }
+          } else {
+            self.dayHtml = ''
+          }
+        } else {
+          self.dayHtml = ''
+        }
+        // 住院伙食补贴费
+        if (self.liveCount) {
+          self.liveHtml = '住院伙食补贴费：赔偿标准(' + (self.live1 || 0) + ')*赔偿人数(' + (self.live2 || 0) + ')*赔偿天数(' + (self.live3 || 0) + ')=' + (self.liveCount || 0) + '；'
+        } else {
+          self.liveHtml = ''
+        }
+
+        // 营养费
+        if (self.nutritionCount) {
+          self.nutritionHtml = '营养费：赔偿标准(' + (self.nutrition1 || 0) + ')*赔偿人数(' + (self.nutrition2 || 0) + ')*赔偿天数(' + (self.nutrition3 || 0) + ')=' + (self.nutritionCount || 0) + '；'
+        } else {
+          self.nutritionHtml = ''
+        }
+
+        // 护理费
+        if (self.nurseCount) {
+          self.nurseHtml = '护理费：赔偿标准(' + (self.nurse1 || 0) + ')*赔偿人数(' + (self.nurse2 || 0) + ')*赔偿天数(' + (self.nurse3 || 0) + ')=' + (self.nurseCount || 0) + '；'
+        } else {
+          self.nurseHtml = ''
+        }
+
+        // 交通费
+        if (self.traffic1) {
+          self.trafficHtml = '交通费：交通赔偿(' + (self.traffic1 || 0) + ')' + '；'
+        } else {
+          self.trafficHtml = ''
+        }
+
+        // 住宿费
+        if (self.stayCount) {
+          self.stayHtml = '住宿费：人数(' + (self.stay1 || 0) + ')*' + '赔偿天数(' + (self.stay2 || 0) + ')*200=' + (self.stayCount || 0) + '；'
+        } else {
+          self.stayHtml = ''
+        }
+
+        // 残疾赔偿金
+        if (self.disableCount) {
+          if (self.disable1 === '1') {
+            self.disableHtml = '残疾赔偿金：城镇户口(' + 30996 + ')*' + '年限(' + (self.disable2 || 0) + ')*' + '伤残等级系数(' + (self.disable3 || 0) + '%)=' + (self.disableCount || 0) + '；'
+          } else if (self.disable1 === '2') {
+            self.disableHtml = '残疾赔偿金：农村户口(' + 9862 + ')*' + '年限(' + (self.disable2 || 0) + ')*' + '伤残等级系数(' + (self.disable3 || 0) + '%)=' + (self.disableCount || 0) + '；'
+          }
+        } else {
+          self.disableHtml = ''
+        }
+
+        // 死亡赔偿金
+        if (self.deathCount) {
+          if (self.death1 === '1') {
+            self.deathHtml = '死亡赔偿金：城镇户口(' + 30996 + ')*' + '年限(' + (self.death2 || 0) + ')*' + '伤残等级系数(' + (self.death3 || 0) + '%)=' + (self.deathCount || 0) + '；'
+          } else if (self.death1 === '2') {
+            self.deathHtml = '死亡赔偿金：农村户口(' + 9862 + ')*' + '年限(' + (self.death2 || 0) + ')*' + '伤残等级系数(' + (self.death3 || 0) + '%)=' + (self.deathCount || 0) + '；'
+          }
+        } else {
+          self.deathHtml = ''
+        }
+
+        // 丧葬费
+        if (self.funeralCount) {
+          if (self.funeral1 === '1') {
+            self.funeralHtml = '死亡赔偿金：丧葬赔偿(' + 47844 + ')' + '；'
+          } else if (self.funeral1 === '2') {
+            self.funeralHtml = '死亡赔偿金：丧葬赔偿(' + 0 + ')' + '；'
+          } else {
+            self.funeralHtml = ''
+          }
+        } else {
+          self.funeralHtml = ''
+        }
+
+        // 被抚养人
+        if (self.bringCount) {
+          self.bringHtml = '被抚养人：赔偿标准(' + (self.bring1 || 0) + ')*' + '年限(' + (self.bring2 || 0) + ')*' + '伤残等级系数(' + (self.bring3 || 0) + '%)=' + (self.bringCount || 0) + '；'
+        } else {
+          self.bringHtml = ''
+        }
+
+        // 残疾辅助器具费
+        if (self.toolCount) {
+          self.toolHtml = '残疾辅助器具费：残疾辅助器具赔偿(' + (self.tool1 || 0) + ')' + '；'
+        } else {
+          self.toolHtml = ''
+        }
+
+        // 后期治疗费
+        if (self.cureCount) {
+          self.cureHtml = '后期治疗费：后期治疗赔偿(' + (self.cure1 || 0) + ')' + '；'
+        } else {
+          self.cureHtml = ''
+        }
+
+        // 精神抚慰金
+        if (self.comfortCount) {
+          self.comfortHtml = '精神抚慰金：精神抚慰金(' + (self.comfort1 || 0) + ')' + '；'
+        } else {
+          self.comfortHtml = ''
+        }
+
+        // 鉴定费
+        if (self.authenticateCount) {
+          self.authenticateHtml = '鉴定费：鉴定费(' + (self.authenticate1 || 0) + ')' + '；'
+        } else {
+          self.authenticateHtml = ''
+        }
+        self.allCount = (Number(self.organizationCount) || 0) + (Number(self.dayCount1) || 0) + (Number(self.liveCount) || 0) + (Number(self.nutritionCount) || 0) + (Number(self.nurseCount) || 0) +
+          (Number(self.trafficCount) || 0) + (Number(self.stayCount) || 0) + (Number(self.disableCount) || 0) + (Number(self.deathCount) || 0) +
+          (Number(self.funeralCount) || 0) + (Number(self.bringCount) || 0) + (Number(self.toolCount) || 0) + (Number(self.cureCount) || 0) +
+          (Number(self.comfortCount) || 0) + (Number(self.authenticateCount) || 0)
+
+        if (parseInt(self.allCount) === self.allCount) {
+          self.allCount = self.allCount + '.00'
+        }
+        // self.allCount.toFixed(2);
+        // console.log(typeof self.allCount)
+        // var str = String(self.allCount)
+        // var index = str.indexOf('.')
+        // var chu = Number('1e' + (index - 1))
+        // if (index > 6) {
+        //   self.allCount = (self.allCount / chu).toFixed(2) + ' x 10^' + (index - 1)
+        // }
+
+        self.allHtml = '合计：' + self.allCount + '。'
+      },
+      // 赔偿标准查看
+      see: function() {
+        var self = this
+        var title = '提示'
+        var text = ''
+        var index = self.flag
+        if (index === 1 || index === '1') {
+          title = '医疗机构及费用赔付规则'
+          text = '交通事故发生后，受害人可以根据受损害的状况和治疗需要就近选择依法成立的，具有相应治疗能力的医院、卫生院、急救站等医疗机构接受治疗，治疗终结后凭医疗机构出具的抢救费单据，医疗费发票以及费用清单，向保险人申请理赔。受害人所产生的医疗费用根据保险合同按照医保政策扣减百分之十到百分之十五。受害人自行治疗与伤情无关的费用不属于理赔范围，因病情需要外购药品的应由医疗机构出具相关证明，受害人因交通事故主张后续治疗费的，可根据医疗机构出具的继续治疗意见或司法鉴定意见确定必然发生的相关费用（如补救性治疗、遗留功能障碍需康复治疗、安装假肢、取出内置人工材料等），与以发生的医疗费一并向保险人申请理赔。'
+        }
+        if (index === 2 || index === '2') {
+          title = '误工费赔付规则'
+          text = '受害人因交通事故主张误工费的，误工费根据受害人的误工时间和收入状况确定，误工时间应当根据受害人的治疗时间或医疗机构出具的证明予以确定。受害人因伤致残、误工时间可以计算至定残日的前一天。受害人有固定收入的，误工费计算标准以所提供材料为依据参照同行业标准进行赔付，无固定收入的，按照户口性质，城镇户口每人每天100元，农村户口每人每天50元进行赔付。'
+        }
+        if (index === 3 || index === '3') {
+          title = '住院伙食补助费赔付规则'
+          text = '住院伙食补助费可参照云南省省级国家机关、事业单位工作人员出差补助费标准，按每人每天100元进行赔付。'
+        }
+        if (index === 4 || index === '4') {
+          title = '营养费赔付规则'
+          text = '受害人主张营养费的应根据医疗机构出具的须加强营养的证明，按每人每天30至50元进行赔付，赔付天数以住院天数为准。'
+        }
+        if (index === 5 || index === '5') {
+          title = '护理费赔付规则'
+          text = '护理费以医疗机构出具需要陪护的证明计算护理费，原则上按每天120至150元赔付，赔付天数以住院天数为准。如受害人住院天数少，根据伤情出院后确需护理的可适当延长护理天数。'
+        }
+        if (index === 6 || index === '6') {
+          title = '交通费赔付规则'
+          text = '受害人需赔付交通费的应根据伤者的伤情酌情考虑，原则上在2000元以内。交通事故中死者的近亲属为办理丧事主张交通费的以3至5人为限，按乘坐普通交通工具产生的实际费用进行赔付。'
+        }
+        if (index === 7 || index === '7') {
+          title = '住宿费赔付规则'
+          text = '交通事故中死者的近亲属以3 至5人为限，为办理丧葬事宜，以实际住宿产生的正式发票计算赔付，时间以三天为限，按每人每天200元计算。'
+        }
+        if (index === 12 || index === 13 || index === 14 || index === '12' || index === '13' || index === '14') {
+          title = '残疾赔偿金、死亡赔偿金、丧葬费'
+          text = '残疾赔偿金、死亡赔偿金参照《云南省交通事故人身损害赔偿有关费用计算标准》，按照户口性质进行赔付。丧葬费参照《云南省交通事故人身损害赔偿有关费用计算标准》进行赔付。'
+        }
+        if (index === 8 || index === '8') {
+          title = '被抚养人赔付规则'
+          text = '被扶养人生活费参照《云南省交通事故人身损害赔偿有关费用计算标准》进行赔付，原则上只有死亡或伤残达到七级以上才赔付被扶养人生活费。'
+        }
+        if (index === 11 || index === '11') {
+          title = '残疾辅助器具费赔付规则'
+          text = '受害人需赔付残疾辅助器具的应提供鉴定机构的相关鉴定意见，以普及型费用进行赔付，时间从受害人定残之日起一次性计算至75周岁止。'
+        }
+        if (index === 15 || index === '15') {
+          title = '后期治疗费赔付规则'
+          text = '视情况而定。'
+        }
+        if (index === 10 || index === '10') {
+          title = '精神抚慰金赔付规则'
+          text = '受害人因交通事故致残或死亡，伤者本人或死者近亲属要求赔付精神抚慰金的，根据责任划分及实际情况酌情考虑，原则上最高不得超过五万元。'
+        }
+        if (index === 9 || index === '9') {
+          title = '鉴定费赔付规则'
+          text = '由于交通事故所产生的所有鉴定费用，按照责任划分均由当事双方自行赔付，保险公司不承担该项费用。如当事人重新申请鉴定所产生的费用由申请人自行承担。'
+        }
+        self.modelTitle = title
+        self.setData({modelTitle: title})
+        self.modelText = text
+        self.setData({modelText: text})
+        self.toggle = true
+        self.setData({toggle: true})
+        // wx.showModal({
+        //   title: title,
+        //   content: text,
+        //   showCancel: false,
+        //   success: function(res) {
+        //     if (res.confirm) {
+        //       console.log('用户点击确定')
+        //     } else if (res.cancel) {
+        //       console.log('用户点击取消')
+        //     }
+        //   },
+        //   fail: function(res) {
+        //     console.log(res)
+        //   }
+        // })
+      },
+      modelHide: function() {
+        var self = this
+        self.toggle = false
+        self.setData({toggle: false})
+      }
+    }
+    onLoad() {
+      console.log('4251', this)
+      _this = this
+      wx.getSystemInfo({
+        success: function(res) {
+          console.log('success', res)
+          _this.footerWidth = res.screenWidth - 20
+          _this.textAreaWidth = res.screenWidth - 32
+          _this.modelWidth = res.screenWidth
+          _this.modelHeight = res.screenHeight
+          _this.data.modelWidth = res.screenWidth
+          _this.data.modelHeight = res.screenHeight
+        }
+      })
+      this.methods.count()
+      wx.getSystemInfo({
+        success: function(res) {
+          var sys = res.system
+          console.log(sys.indexOf('Android'))
+          if (sys.indexOf('Android') > -1) {
+            _this.android = true
+            _this.data.android = true
+            _this.setData({android: true})
+            _this.data.setData({android: true})
+          } else {
+            _this.android = false
+            _this.data.android = false
+            _this.setData({android: false})
+            _this.data.setData({android: false})
+          }
+        }
+      })
+    }
+
+  }
+</script>
+<style lang="scss">
+  input{
+    border:1px solid;
+    border-radius: 5px;
+    padding: 5px;
+  }
+  .container{
+    margin: 0 auto;
+    width:90%;
+    /*margin-bottom: 230px;*/
+  }
+  .body{
+    margin-top: 20px;
+  }
+  .count{
+    display: inline-block;
+    float: right;
+    /*width:100px;*/
+    line-height: 30px;
+  }
+  .btn{
+    padding: 5px;
+    border-radius:5px;
+    display: inline-block;
+    line-height:30px;
+    background: rgb(242, 242, 242);
+    margin: 5px;
+  }
+  .btnYes{
+    background:rgb(25, 158, 216);
+    color:white;
+  }
+  .btnNo{
+    background: rgb(255, 153, 0);
+    color:white;
+  }
+
+  .inputCss{
+    padding: 10px;
+  }
+  .bodySpan{
+    display: inline-block;
+    width:35%;
+    text-align: center;
+  }
+  .and{
+    position: relative;
+    top:-12px;
+  }
+  .inputCon{
+    display: inline-block;
+    width:50%;
+  }
+  .radioSpan{
+    display: inline-block;
+    width:35%;
+    text-align: center;
+  }
+  .box{
+    margin-bottom: 5px;
+  }
+
+  .footer{
+    background: rgb(25, 158, 216);
+    padding:10px;
+    position: fixed;
+    bottom:0px;
+    left: 0;
+    z-index: 9;
+  }
+  .footRight{
+    margin-top: 10px;
+  }
+  .model{
+    height: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 90
+  }
+  .modelText{
+    width: 70%;
+    height: 200px;
+    position: fixed;
+    left: 15%;
+    top: 25%;
+    border-radius: 5px;
+    background: white;
+    padding: 5px;
+    z-index: 99
+  }
+  .zhan{
+    height:40px;
+    width:100%
+  }
+  .top{
+    height:110px
+  }
+  .title{
+    font-size: 16px;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%
+  }
+  .foot{
+    font-size: 18px;
+    text-align: center;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width:100%;
+    border-top: 1px solid #A9A9A9;
+    line-height: 38px;
+    color: #00FF00
+  }
+  .show{
+    display: block;
+  }
+  .hide{
+    display: none;
+  }
+</style>

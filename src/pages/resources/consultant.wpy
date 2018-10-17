@@ -1,0 +1,233 @@
+<template>
+  <view class="container">
+    <view class="zan-row">
+
+      <view wx:for="{{ list }}" wx:key="id" class="zan-col zan-col-12">
+        <view class="box">
+          <image src="{{item.imgPhoto}}" class="tx" @error="handleError({{index}})"  mode="aspectFill"></image>
+          <view class="zan-center text-primary zan-font-16">{{ item.actualName }}</view>
+          <view class="zan-center zan-font-12"><view class="zw">{{ item.serviceName }}</view></view>
+          <view class="zan-cell">
+            <view class="zan-cell__hd gray-dark">擅长:</view>
+            <view class="zan-cell__bd zan-ellipsis--l2">{{ item.ability }}</view>
+          </view>
+          <view class="zan-cell">
+            <view class="zan-cell__hd gray-dark">经验:</view>
+            <view class="zan-cell__bd">{{ item.years }}</view>
+          </view>
+        </view>
+      </view>
+
+    </view>
+
+    <zan-loadmore
+      wx:if="{{ !nodata }}"
+      :loading.sync="loading"
+      :nodata.sync="nodata"
+      :nomore.sync="nomore"
+      nomoreText="已经到底了"
+    ></zan-loadmore>
+
+    <view wx:if="{{ nodata && !loading }}" class="nodata-view">
+      <view class="nodata-view__icon"><view class="icon icon-tijianbaogaochaxun"></view></view>
+      <view class="nodata-view__label">当前无咨询师</view>
+    </view>
+
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import ZanLoadmore from '@/components/zan-loadmore'
+  import {getCounselorAndMediators} from '@/api/resources'
+
+  export default class Consultant extends wepy.page {
+    config = {
+      // enablePullDownRefresh: true,
+      navigationBarTitleText: '咨询师'
+    }
+    components = {
+      'zan-loadmore': ZanLoadmore
+    }
+    data={
+      year: 0,
+      // 页码
+      pageNum: 0,
+      // 每页数量
+      pageSize: 10,
+      // 总数量
+      itemCount: 0,
+      // 是否正在加载
+      loading: false,
+      // 是否已加载完
+      nomore: false,
+      // 是否无数据
+      nodata: false,
+      list: []
+    }
+    methods = {
+      handleError(index) {
+        const item = this.list[index]
+
+        if (item.onerror) {
+          return
+        }
+
+        item.imgPhoto = '/images/sign/avatar_default.png'
+        item.onerror = true
+
+        this.$apply()
+      }
+    }
+
+    onPullDownRefresh() {
+      this.loading = false
+      this.nodata = false
+      this.nomore = false
+      this.list = []
+      this.pageNum = 0
+      this.itemCount = 0
+
+      this.onPullup(() => {
+        wx.stopPullDownRefresh()
+      })
+    }
+
+    onReachBottom() {
+      this.onPullup()
+    }
+
+    // 上拉加载
+    onPullup(cb) {
+      // 若没有数据，或已加载完，或正在加载，则不做处理
+      if (this.nodata || this.nomore || this.loading) return
+
+      const {pageNum, pageSize} = this
+
+      // 开启加载状态
+      this.loading = true
+      getCounselorAndMediators({
+        pageSize,
+        // 加载下一页的数据
+        pageNum: pageNum + 1,
+        type: 1, // 1是咨询师  2是调解员
+      })
+        .then((data = {}) => {
+          // 关闭加载状态
+          this.loading = false
+
+          let list = data.data || []
+
+          const year = new Date().getFullYear()
+
+          list = list.map((item = {}) => {
+            item.years = '-'
+
+            if (typeof item.jobstart === 'string') {
+              let start = `${item.jobstart}`.substr(0, 4) - 0
+
+              if (!isNaN(start)) {
+                item.years = `${year - start + 1}年`
+              }
+            }
+
+            if (typeof item.imgPhoto === 'undefined' || item.imgPhoto === '') {
+              item.imgPhoto = '/images/sign/avatar_default.png'
+            }
+
+            return item
+          })
+
+          this.list = this.list.concat(list)
+
+          this.itemCount = data.size || 0
+          // 计算是否有数据
+          this.nodata = this.itemCount === 0
+          // 计算是否已加载完
+          this.nomore = !this.nodata && this.list.length === this.itemCount
+
+          // 若未加载完，则页码加1
+          if (!this.nodata && !this.nomore) {
+            this.pageNum++
+          }
+
+          this.$apply()
+
+          cb && cb()
+        })
+        .catch(() => {
+          // 关闭加载状态
+          this.loading = false
+          this.$apply()
+
+          cb && cb()
+        })
+    }
+
+    onLoad() {
+      // 初始化后执行一次上拉加载
+      this.onPullup()
+      this.$apply()
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  $bgcolor: #f1f8ff;
+
+  .container {
+    position: relative;
+    padding:10px;
+    background-color: $bgcolor;
+  }
+  .zan-loadmore--nodata .zan-loadmore__tips {
+    background: $bgcolor;
+  }
+  .box{
+    background-color: $white;
+    margin: 10px;
+    padding: 10px;
+    border:1px solid $blue;
+    border-radius: 10rpx;
+    overflow: hidden;
+    .tx{
+      width: 110rpx;
+      height: 110rpx;
+      margin: 10rpx auto;
+      display: block;
+      border-radius: 110rpx;
+      overflow: hidden;
+      background-size: cover;
+    }
+    .zw{
+      display: inline-block;
+      color: $blue;
+      background-color: $bgcolor;
+      padding: 3px;
+      margin: 0 auto;
+      border-radius: 8rpx;
+    }
+    .zan-cell {
+      position:static;
+      padding:0;
+      align-items: flex-start;
+    }
+
+    .zan-cell__hd{
+      width: 35px;
+      color: $gray-dark;
+    }
+  }
+  .zan-ellipsis--l2 {
+    height: 40px;
+  }
+  .nodata-view {
+    width: 100vw;
+    height: 100vh;
+  }
+  .zan-cell::after {
+    display: none;
+  }
+
+</style>

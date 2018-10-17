@@ -1,0 +1,70 @@
+<template>
+  <view class="container">
+    <view class="zan-panel no-mg">
+
+      <view class="zan-cell">
+        <view class="zan-field__title">纠纷类型:</view>
+        <view class="zan-cell__bd">{{info.type.name}}</view>
+      </view>
+
+      <view class="zan-cell">
+        <view class="zan-field__title">纠纷发生地:</view>
+        <view class="zan-cell__bd">{{ info.lname}}{{info.address}}</view>
+      </view>
+
+      <view class="zan-cell">
+        <view class="zan-field__title">调解机构:</view>
+        <view class="zan-cell__bd">{{ info.org.organizationName}}</view>
+      </view>
+    </view>
+
+    <view class="section-caption zan-hairline--top-bottom">
+      <view class="section-title">纠纷事件</view>
+    </view>
+    <view style="padding:10px 15px">{{info.remarks}}</view>
+    <view class="section-caption zan-hairline--top-bottom">
+      <view class="section-title break">申请诉求</view>
+    </view>
+    <view style="padding:10px 15px">{{info.appeal}}</view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {getLawCaseDetail} from '@/api/user'
+  export default class DisputeInfo2 extends wepy.page {
+    config = {
+      navigationBarTitleText: '纠纷信息'
+    }
+    data={
+      info: {},
+    }
+    onLoad({caseid}) {
+      getLawCaseDetail({
+        lawCaseId: caseid
+      }).then((data = {}) => {
+        this.info = data
+        this.$apply()
+      })
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables.scss';
+  .container{
+    background-color: $white;
+  }
+  .zan-field__title,
+  .zan-panel > .zan-panel__title {
+    color: $gray-dark;
+  }
+  .section-caption{
+    background-color: $gray-ef;
+  }
+  .break{
+    word-wrap:break-word;
+    width:100%;
+  }
+
+</style>

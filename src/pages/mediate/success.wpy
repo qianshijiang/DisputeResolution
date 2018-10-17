@@ -1,0 +1,53 @@
+<template>
+  <view class="container content-padded">
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view class="icon icon-duihaocheckmark17"></view>
+    <view class="zan-font-20">申请调解提交成功</view>
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view><text>\n</text></view>
+    <view>温馨提示：请前往我的调解页面查看已提交的申请</view>
+    <view><text>\n</text></view>
+    <view style="width:80%;">
+      <navigator class="zan-btn zan-btn--primary" url="material?caseid={{ caseId }}" open-type="redirect">提交相关证据材料</navigator>
+      <navigator class="zan-btn zan-btn--primary" url="/pages/user/user?event=1" open-type="redirect">暂不需要</navigator>
+      <navigator class="zan-btn zan-btn--primary zan-btn--plain" url="apply" open-type="redirect">提交新的申请</navigator>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+
+export default class MediateApplySuccess extends wepy.page {
+  config = {
+    navigationBarTitleText: '申请调解'
+  }
+
+  data = {
+    caseId: ''
+  }
+
+  onLoad({caseid}) {
+    this.caseId = caseid
+  }
+}
+</script>
+
+<style lang="scss">
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  .icon {
+    font-size: 150px;
+    color: #7cc343;
+    line-height: 1;
+  }
+}
+</style>

@@ -1,0 +1,546 @@
+<template>
+  <view class="container">
+    <view class="label">请手写签名，进行确认</view>
+    <view class="canvas-outer">
+      <view class="canvas-inner">
+        <canvas
+        class="canvas-front"
+        canvas-id="signCanvas"
+        disable-scroll
+        @touchstart="touchstart"
+        @touchmove="touchmove"
+        @touchend="touchend"
+        @touchcancel="touchcancel"
+        style="width:{{canvasWidth}}px;height:{{canvasHeight}}px;"
+        ></canvas>
+      </view>
+    </view>
+    <view class="zan-btns zan-right">
+      <button class="zan-btn zan-btn--primary zan-btn--plain zan-btn--small" @tap="handleReset">重签</button>
+      <button class="zan-btn zan-btn--primary zan-btn--small" @tap="handleConfirm">确认</button>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import {getQueryString} from '@/utils/utils'
+import {
+  sendRecordBook, // 笔录
+  sendDisputeFact, // 无争议事实书
+  sendPromiseBook, // 承诺书
+  sendDissentBook, // 异议书
+  sendMediatePlan, // 无异议调解方案
+  sendLawJudleBook, // 司法确认申请书
+  sendMediationBook, // 协议书
+  sendPlatformBook // 其他平台签名
+} from '@/api/mediate'
+
+export default class MediateConfirm extends wepy.page {
+  config = {
+    disableScroll: true,
+    navigationBarTitleText: '签名确认'
+  }
+
+  data = {
+    opts: {},
+    code: '', // {String} 案件状态码
+    sign: '', // {String} 0: 调解笔录, 1: 调查笔录
+    caseId: '', // {String} 案件id
+    planId: '', // {String} 调解方案id
+    promiseId: '', // {String} 承诺书id,
+    meetingId: '', // {String} 会议id
+    isConfirm: '', // {String<Enum>} 1: 确认, 0: 拒绝
+    isPromise: false, // {Boolean} 是否承诺书
+    dissentContent: '', // {String} 异议书内容
+    loading: false,
+    windowWidth: 0,
+    windowHeight: 0,
+    placeholder: false, // 占位符
+    drawable: false,
+    platform: '',
+    startPos: null,
+    flag: false
+  }
+
+  computed = {
+    title() {
+      if (this.code) {
+        const op = this.isConfirm === '1' ? '确认' : '拒绝'
+
+        switch (this.code) {
+        case '44':
+          let typeText = ['调解', '调查'][this.sign] || ''
+          return `${typeText}笔录${op}`
+        case '81': return `无争议事实书${op}`
+        case '87':
+          if (this.isPromise) {
+            return `承诺书${op}`
+          }
+
+          if (this.isDissent) {
+            return '提交异议书'
+          }
+
+          return `无异议调解方案${op}`
+        case '93': return `司法确认申请书${op}`
+        default: return `调解协议${op}`
+        }
+      }
+
+      return ''
+    },
+    // 是否开启横屏
+    landscape() {
+      return this.windowHeight > this.windowWidth
+    },
+    canvasWidth() {
+      return Math.max(this.windowWidth - 30, 200)
+    },
+    canvasHeight() {
+      return Math.max(this.windowHeight - 100, 200)
+    },
+    isDissent() {
+      return this.code === '87' && this.isConfirm === '0'
+    }
+  }
+
+  watch = {
+    title(val) {
+      val && wx.setNavigationBarTitle({title: val})
+    }
+  }
+
+  methods = {
+    touchstart({touches}) {
+      if (!this.loading && touches.length === 1) {
+        this.startRender(touches[0])
+      }
+    },
+    touchmove({touches}) {
+      if (!this.loading && touches.length === 1) {
+        this.render(touches[0])
+      }
+    },
+    touchend() {
+      this.drawable = false
+    },
+    touchcancel() {
+      this.drawable = false
+    },
+    // 重签
+    handleReset() {
+      if (this.loading) {
+        return
+      }
+
+      this.resetCanvas()
+    },
+    // 签名确认
+    handleConfirm() {
+      if (this.loading) {
+        return
+      }
+
+      if (this.placeholder) {
+        return wx.showToast({title: '请手写签名', icon: 'none', duration: 3e3})
+      }
+      if (!this.flag) {
+        this.exportImg()
+      }
+    }
+  }
+
+  // 导出签名图片
+  exportImg() {
+    this.flag = true
+    wx.showLoading({title: '正在生成签名图片...'})
+    wx.canvasToTempFilePath({
+      x: 0,
+      y: 0,
+      width: this.canvasWidth,
+      height: this.canvasHeight,
+      destWidth: this.canvasWidth,
+      destHeight: this.canvasHeight,
+      fileType: 'png',
+      canvasId: 'signCanvas',
+      success: ({tempFilePath}) => {
+        this.flag = false
+        wx.hideLoading()
+
+        this.submit(tempFilePath)
+      },
+      fail: () => {
+        this.flag = false
+        wx.hideLoading()
+        wx.showToast({title: '导出签名图片失败，请稍后再试！', icon: 'none', duration: 3e3})
+      }
+    })
+  }
+
+  selfSubmit(code, opts = {}) {
+    return new Promise((resolve, reject) => {
+      Object.assign(opts.formData, {
+        lawCaseId: this.caseId,
+        isConfirm: this.isConfirm
+      })
+
+      switch (code) {
+      // 笔录
+      case '44':
+        opts.formData.meetingId = this.meetingId
+        return sendRecordBook(opts).then(resolve).catch(reject)
+      // 协议书
+      case '56':
+        return sendMediationBook(opts).then(resolve).catch(reject)
+      // 无争议事实书
+      case '81':
+        return sendDisputeFact(opts).then(resolve).catch(reject)
+      // 无异议调解方案
+      case '87':
+        // 承诺书
+        if (this.isPromise) {
+          opts.formData.promiseId = this.promiseId
+
+          return sendPromiseBook(opts).then(resolve).catch(reject)
+        }
+
+        opts.formData.lawMschemeId = this.planId
+
+        // 异议书
+        if (this.isDissent) {
+          opts.formData.lawDissentContent = this.dissentContent
+
+          return sendDissentBook(opts).then(resolve).catch(reject)
+        }
+
+        // 调解方案
+        return sendMediatePlan(opts).then(resolve).catch(reject)
+      // 司法确认申请书
+      case '93':
+        return sendLawJudleBook(opts).then(resolve).catch(reject)
+      default:
+        reject(new TypeError(`未知的code：${code}`))
+      }
+    })
+  }
+
+  // 签名提交处理
+  submitSwitch(path) {
+    const opts = {
+      name: 'file',
+      filePath: path,
+      formData: {}
+    }
+
+    if (this.landscape) {
+      opts.formData.isRotated = this.landscape ? 1 : 0
+    }
+
+    return new Promise((resolve, reject) => {
+      switch (this.platform) {
+      // PC签名
+      case 'pc':
+        Object.assign(opts.formData, this.opts)
+        return sendPlatformBook(opts).then(resolve('pc')).catch(reject)
+      default:
+        return this.selfSubmit(this.code, opts).then(resolve).catch(reject)
+      }
+    })
+  }
+
+  // 提交签名
+  submit(path) {
+    this.loading = true
+    wx.showLoading({title: '正在提交...'})
+
+    this.submitSwitch(path)
+    .then((data) => {
+      wx.hideLoading()
+      this.loading = false
+      this.$apply()
+      let that = this
+      wx.showModal({
+        content: '签名已成功提交',
+        showCancel: false,
+        success: function(res) {
+
+          if (res.confirm) {
+            // console.log(22222)
+            that.platform && that.resetCanvas()
+            console.log(that.platform)
+            if (that.platform === 'pc') {
+              // console.log(3333)
+              wx.redirectTo({
+                url: '/pages/home/home'
+              })
+            } else {
+              // console.log(444444)
+              wx.navigateBack()
+            }
+          }
+        }
+      })
+    })
+    .catch((e = {}) => {
+      wx.hideLoading()
+      this.loading = false
+
+      this.$apply()
+
+      wx.showModal({content: e.message || '提交失败，请稍后再试！'})
+    })
+  }
+
+  // 手指按下，准备绘制
+  startRender(pos) {
+    if (this.placeholder) {
+      // 清空画布
+      this.clear()
+      this.placeholder = false
+    }
+
+    const ctx = this.context
+
+    // 画笔设置
+    ctx.setStrokeStyle('black') // 线条颜色
+    ctx.setLineWidth(4) // 线宽
+    ctx.setLineJoin('round') // 拐角处平滑处理
+    ctx.setShadow(0, 0, 2, 'gray') // 线条阴影
+
+    this.drawable = true
+    this.startPos = pos
+  }
+
+  // 绘制图形
+  render({x, y}) {
+    if (!this.drawable) {
+      return
+    }
+
+    const ctx = this.context
+    const pos = this.transformPos(this.startPos, {x, y})
+
+    ctx.moveTo(pos.startX, pos.startY)
+    // ctx.lineTo(pos.targetX, pos.targetY)
+    ctx.quadraticCurveTo(pos.startX, pos.startY, pos.targetX, pos.targetY)
+    ctx.stroke()
+    ctx.draw(true)
+
+    this.startPos = {x, y}
+  }
+
+  // 坐标转换
+  transformPos(start, target) {
+    if (this.landscape) {
+      return {
+        startX: start.y,
+        startY: this.canvasWidth - start.x,
+        targetX: target.y,
+        targetY: this.canvasWidth - target.x
+      }
+    }
+
+    return {
+      startX: start.x,
+      startY: start.y,
+      targetX: target.x,
+      targetY: target.y
+    }
+  }
+
+  // 变换画布
+  transformCanvas() {
+    if (this.landscape) {
+      const ctx = this.context
+
+      ctx.translate(this.canvasWidth, 0)
+      ctx.rotate(90 * Math.PI / 180)
+    }
+  }
+
+  // 计算canvas的尺寸
+  getCanvasSize() {
+    if (this.landscape) {
+      return {
+        width: this.canvasHeight,
+        height: this.canvasWidth
+      }
+    }
+
+    return {
+      width: this.canvasWidth,
+      height: this.canvasHeight
+    }
+  }
+
+  // 清空绘图区域
+  clear() {
+    const size = this.getCanvasSize()
+
+    this.context.clearRect(0, 0, size.width, size.height)
+  }
+
+  // 重签
+  resetCanvas() {
+    this.clear()
+    this.transformCanvas()
+    this.drawPlaceholder()
+  }
+
+  // 绘制 placeholder
+  drawPlaceholder() {
+    const canvasSize = this.getCanvasSize()
+    const ctx = this.context
+    const margin = 20
+    const fontSize = 40
+    const imgSize = 48
+    const color = '#999999'
+    const text = '签名区'
+
+    const width = fontSize * 3 + margin + imgSize
+
+    let x = (canvasSize.width - width) / 2
+    let y = (canvasSize.height - imgSize) / 2
+
+    ctx.drawImage('/images/mediate/pen.png', x, y, imgSize, imgSize)
+
+    ctx.setFontSize(fontSize)
+    ctx.setFillStyle(color)
+    ctx.setTextBaseline('top')
+    ctx.fillText(text, x + imgSize + margin, (canvasSize.height - fontSize) / 2 - 8)
+
+    ctx.draw()
+
+    this.placeholder = true
+  }
+
+  // 获取窗口尺寸
+  getWindowSize() {
+    return new Promise((resolve, reject) => {
+      wx.getSystemInfo({
+        success: resolve,
+        fail: reject
+      })
+    })
+  }
+
+  onLoad(opts = {}) {
+    console.log(opts)
+    const {
+      code, // {String} 案件状态码
+      sign, // {String} 0: 调解笔录, 1: 调查笔录
+      caseid, // {String} 案件id
+      confirm, // {String<Enum>} 1: 确认, 0: 拒绝
+      promise, // {Boolean} 是否承诺书
+      content, // {String} 异议书内容
+      planid, // {String} 调解方案id
+      promiseid, // {String} 承诺书id,
+      meetingid, // {String} 会议id
+      q = '' // 扫码进入携带的参数
+    } = opts
+    const params = getQueryString(decodeURIComponent(q))
+    const platform = params ? params.platform : null
+    // console.log(platform)
+
+    this.code = code
+    this.sign = sign
+    this.caseId = caseid
+    this.planId = planid
+    this.promiseId = promiseid
+    this.meetingId = meetingid
+    this.isConfirm = confirm
+    this.isPromise = !!promise
+    this.platform = platform
+    this.opts = params || opts
+
+    // console.log(this.platform)
+
+    if (!code && !platform) {
+      return wx.showModal({
+        content: `参数错误：${JSON.stringify(opts)}`,
+        showCancel: false
+      })
+    }
+
+    if (content) {
+      this.dissentContent = decodeURIComponent(content)
+    }
+
+    this.getWindowSize()
+    .then(({windowWidth, windowHeight}) => {
+      this.windowWidth = windowWidth
+      this.windowHeight = windowHeight
+
+      this.$apply()
+    })
+  }
+
+  onReady() {
+    this.context = wx.createCanvasContext('signCanvas')
+    this.resetCanvas()
+  }
+}
+</script>
+
+<style lang="scss">
+@import '../../styles/variables';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.label {
+  padding: 10px 15px;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.canvas-outer {
+  flex: 1;
+  padding: 0 15px;
+}
+
+.canvas-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas-front {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  z-index: 10;
+  background-color: $gray-light;
+  border: 1rpx solid $border-color;
+  border-radius: 4px;
+  box-sizing: border-box;
+
+  &.back {
+    z-index: 1;
+    opacity: 0;
+  }
+}
+
+.canvas-back {
+  position: absolute;
+  z-index: 1;
+  opacity: 0;
+
+  &.front {
+    z-index: 10;
+    opacity: 1;
+  }
+}
+
+.zan-btn + .zan-btn {
+  margin-left: 10px;
+}
+</style>

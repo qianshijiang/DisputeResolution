@@ -1,0 +1,178 @@
+<template>
+  <view class="container">
+    <view class="zan-panel content-padded no-mg">
+      <zan-steps :steps.sync="steps" :type.sync="type" :hasDesc.sunc="hasDesc"></zan-steps>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import {dateformat} from '@/utils/utils'
+  import {getMeetingData} from '@/api/mediate'
+  import {getLawCaseProgress} from '@/api/user'
+  import ZanSteps from '@/components/zan-steps'
+
+  export default class MediationProgress extends wepy.page {
+    config = {
+      enablePullDownRefresh: true,
+      navigationBarTitleText: '调解进度'
+    }
+    components={
+      'zan-steps': ZanSteps
+    }
+    data={
+      Id: '',
+      type: 'vertical',
+      hasDesc: true,
+      steps: [],
+      flag: false,
+      only: [],
+    }
+
+    onLoad({caseid}) {
+      this.Id = caseid
+    }
+
+    onShow() {
+      this.getList(this.Id)
+    }
+    onPullDownRefresh() {
+      this.getList(this.Id, () => wx.stopPullDownRefresh())
+    }
+    getList(id, cb) {
+      getLawCaseProgress({
+        lawCaseId: id
+      }).then((data = {}) => {
+        // console.log(data)
+        let list = data.lawCaseProgress || []
+
+        this.steps = list.map((item, index) => {
+          const code = item.statusCode
+          const name = item.statusName
+          const caseid = item.lawCaseId
+          const meetingId = item.meetingId
+          const btns = []
+          if (item.statusName === '调解成功') {
+            this.flag = true
+          }
+          console.log(name)
+          item.text = this.datefn(item.createDate)
+          item.desc = item.describes
+          item.current = (index === 0)
+
+          item.done = true
+          const handler = (pIdx, sIdx, e) => {
+            let params = `caseid=${caseid}&meetingid=${meetingId}&userid=${item.personnelid}&role=${item.role}`
+            wx.showLoading()
+            getMeetingData({
+              role: item.role,
+              lawCaseId: caseid,
+              lawMeettingId: meetingId
+            })
+              .then(({isEnter, msg = '无法进入会议'} = {}) => {
+                wx.hideLoading()
+                wx.navigateTo({url: `/pages/mediate/live?${params}`})
+              })
+              .catch(e => wx.hideLoading())
+          }
+          // if ((code === '40' || code === '41') && this.flag === false) {
+          //   btns.push({text: '进入', handler})
+            // return
+          // }
+          switch (code) {
+          case '40':
+          case '41':
+          case '121':
+          case 121:
+            btns.push({text: '进入', handler})
+            break
+          // 文书相关
+          case 44:
+            btns.push({text: '查看', url: `/pages/mediate/document?code=${code}&caseid=${caseid}&meetingid=${meetingId}`})
+            break
+          case '44':
+            btns.push({text: '查看', url: `/pages/mediate/document?code=${code}&caseid=${caseid}&meetingid=${meetingId}`})
+            break
+          case 120:
+            btns.push({text: '过期', url: ``})
+            break
+          case '120':
+            btns.push({text: '过期', url: ``})
+            break
+          case '56':
+          case '81':
+          case '87':
+          case '93':
+            if (item.isShow === '1') {
+              btns.push({text: '查看', url: `/pages/mediate/document?code=${code}&caseid=${caseid}&meetingid=${meetingId}`})
+            }
+            break
+          // 调解失败
+          case '80':
+            break
+          }
+
+          return {...item, btns}
+        })
+
+        this.$apply()
+
+        cb && cb()
+      })
+        .catch(cb)
+    }
+    // 格式化时间戳 yyyy-MM-dd hh:mm:ss
+    datefn(str) {
+      return dateformat(new Date(str), 'yyyy-MM-dd hh:mm:ss')
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+  .zan-steps--vsteps {
+    .zan-steps__title + .zan-btn {
+      margin-left: 10px;
+    }
+    .zan-steps__content {
+      display: flex;
+    }
+    .zan-steps__title--desc {
+      padding-left:27px;
+      flex: 1;
+      max-width: 190px;
+    }
+    .zan-steps__icons {
+      top: 26px;
+    }
+    .zan-steps__step--done {
+      color: $gray-dark;
+
+      &.zan-steps__step--cur {
+        color: $orange;
+      }
+
+      .zan-steps__circle {
+        background-color: $gray;
+        border-radius: 50%
+      }
+    }
+    .zan-steps__step--cur .zan-steps__circle {
+      font-family: 'icon-odr';
+      height: 20px;
+      width: 20px;
+      background: none;
+
+      &::after{
+        content: '\e69e';
+        display: block;
+        height: 20px;
+        width: 20px;
+        font-family: 'icon-odr';
+        font-size: 20px;
+        border-radius: 50%;
+      }
+    }
+  }
+</style>

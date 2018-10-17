@@ -1,0 +1,308 @@
+<template>
+  <view class="list">
+    <block wx:for="{{listo}}" wx:for-index="index" wx:for-item="item" wx:key="id" wx:if="{{active === 'tv'}}">
+      <view class="zan-panel no-mg">
+        <navigator class="zan-cell" style="display: block;" url="/pages/mediate/live?caseid={{item.lawCase.lawCaseId}}&meetingid={{item.meetingId}}&userid={{item.lawCase.personnelId}}&role={{item.lawCase.role}}">
+          <view style="display: flex;flex-direction: row;margin: 7px auto;justify-content: space-around">
+              <view class="zan-field__title" style="min-width: 40px;color: #333">参与者:</view>
+            <view class="zan-cell__bd"><span wx:for="{{item.lawCase.applicants}}" wx:for-index="index" wx:for-item="aname" wx:key="index">{{aname.actualName}}</span><span wx:if="{{item.lawCase.agentA.length > 0}}" wx:for="{{item.lawCase.agentA}}" wx:for-index="index" wx:for-item="agname" wx:key="index">、{{agname.actualName}}</span><span wx:for="{{item.lawCase.respondents}}" wx:for-index="index" wx:for-item="bname" wx:key="index">、{{bname.actualName}}</span><span wx:if="{{item.lawCase.agentR.length > 0}}" wx:for="{{item.lawCase.agentA}}" wx:for-index="index" wx:for-item="bgname" wx:key="index">、{{bgname.actualName}}</span></view>
+              <p>
+                调解
+              </p>
+          </view>
+          <view style="display: flex;flex-direction: row;margin: 5px auto;justify-content: flex-start">
+            <view class="zan-cell__bd break zan-ellipsis--l5" style="color: #999"><span style="color: #000">{{ item.lawCase.type }} </span>{{ item.orderTime }}</view>
+          </view>
+        </navigator>
+      </view>
+    </block>
+    <block wx:for="{{dblist}}" wx:for-index="index" wx:for-item="item" wx:key="id" wx:if="{{active === 'qm'}}">
+      <view class="zan-panel no-mg">
+        <navigator class="zan-cell" style="display: block;" url="/pages/mediate/document?code={{item.statusCode}}&meetingid={{item.meetingId}}&caseid={{item.lawCaseId}}">
+          <view style="display: flex;flex-direction: row;margin: 7px auto;justify-content: space-around">
+            <!--<view class="zan-field__title" style="min-width: 40px;color: #333">参与者:</view>-->
+            <view class="zan-cell__bd">{{item.describes}}</span></view>
+            <p>
+             待签名
+            </p>
+          </view>
+          <view style="display: flex;flex-direction: row;margin: 5px auto;justify-content: flex-start">
+            <view class="zan-cell__bd break zan-ellipsis--l5" style="color: #999"><span style="color: #000">{{ item.type }} </span>{{ item.createdateformat }}</view>
+          </view>
+        </navigator>
+      </view>
+    </block>
+    <zan-loadmore
+      wx:if="{{ !nodata }}"
+      :loading.sync="loading"
+      :nodata.sync="nodata"
+      :nomore.sync="nomore"
+      nomoreText="已经到底了"
+    ></zan-loadmore>
+
+    <view wx:if="{{ nodata && !loading }}" class="nodata-view">
+      <view class="nodata-view__icon"><view class="icon icon-tijianbaogaochaxun"></view></view>
+      <view class="nodata-view__label">当前无调解</view>
+    </view>
+
+  </view>
+
+  <view class="fixed-bar fixed-bar--footer" style="display: none;">
+    <view class="zan-btn zan-btn--primary" @tap="shureGo">申请调解</view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import ZanLoadmore from '@/components/zan-loadmore'
+  import {dateformat, getUserInfo, getLiveData, hasToken} from '@/utils/utils'
+  import {getLawCaseProgress} from '@/api/user'
+  import {getTvList} from '@/api/home'
+
+  export default class MyMediating extends wepy.page {
+    config = {
+      // enablePullDownRefresh: true,
+      navigationBarTitleText: '列表'
+    }
+    components = {
+      'zan-loadmore': ZanLoadmore
+    }
+    data={
+      // index: 0,
+      // array: ['请选择', '等待调解', '正在调解', '调解成功', '撤回调解', '调解失败'],
+      // // 页码
+      // pageNum: 0,
+      // // 每页数量
+      // pageSize: 10,
+      // // 筛选状态
+      // status: '正在调解',
+      // // 总数量
+      // itemCount: 0,
+      // // 是否正在加载
+      // loading: false,
+      // // 是否已加载完
+      // nomore: false,
+      // // 是否无数据
+      // nodata: false,
+      list: [],
+      listo: [],
+      listt: [],
+      dblist: [],
+      title: '视频列表',
+      active: ''
+    }
+
+    // onReachBottom() {
+    //   this.onPullup()
+    // }
+    // 上拉加载
+    onPullup(type, cb) {
+      this.listo = []
+      this.listt = []
+      this.list = []
+      this.dblist = []
+      // 若没有数据，或已加载完，或正在加载，则不做处理
+      // if (this.nodata || this.nomore || this.loading) return
+
+      // const {pageNum, pageSize} = this
+
+      // 开启加载状态
+      wx.showNavigationBarLoading()
+      getTvList()
+        .then((data = {}) => {
+          // 关闭加载状态
+          wx.hideNavigationBarLoading()
+
+          // 将返回的数据追加到list中
+          console.log(data)
+          this.list = data
+          // this.list = this.list.concat(this.transform(data || []))
+          if (this.list.length > 1) {
+            for (let i = 0; i < this.list.length - 1; i++) {
+              this.listo.push(this.list[i])
+            }
+          }
+          this.qmlist = this.list[this.list.length - 1]
+          this.listt = this.qmlist.lawCaseProgress
+          this.listt.forEach(item => {
+            if (item.isconfirm === true) {
+              this.dblist.push(item)
+            }
+          })
+          this.$apply()
+
+          // cb && cb()
+        })
+        .catch(e => {
+          // 关闭加载状态
+          this.loading = false
+          this.$apply()
+
+          // cb && cb()
+        })
+    }
+    watch = {
+      hasToken(newVal, oldVal) {
+        this.onTokenChange()
+      },
+    }
+
+    // token改变
+    onTokenChange() {
+      // 已登录
+      if (this.hasToken) {
+        // 更新用户信息
+        this.userInfo = getUserInfo()
+        // 更新会议状态
+        this.liveData = getLiveData()
+        this.$apply()
+
+      } else {
+        // 未登录，清空用户信息
+        this.userInfo = null
+        // 清空会议状态
+        this.liveData = null
+        this.$apply()
+      }
+    }
+    // 更新token
+    updateToken() {
+      // 更新登录状态
+      this.hasToken = hasToken()
+      this.$apply()
+    }
+    onLoad(options) {
+      this.active = options.title
+      // 初始化后执行一次上拉加载
+      if (options.title === 'tv') {
+        this.title = '视频列表'
+      }
+      if (options.title === 'qm') {
+        this.title = '签名列表'
+      }
+    }
+    onShow() {
+      this.onPullup()
+    }
+    // onPullDownRefresh() {
+    //   this.loading = false
+    //   this.nodata = false
+    //   this.nomore = false
+    //   this.list = []
+    //   this.pageNum = 0
+    //   this.itemCount = 0
+    //
+    //   this.onPullup(() => {
+    //     wx.stopPullDownRefresh()
+    //   })
+    // }
+
+    methods={
+      getList(id) {
+        console.log(id)
+        getLawCaseProgress({
+          lawCaseId: id
+        }).then((data = {}) => {
+          // console.log(data)
+          let lists = data.lawCaseProgress || []
+          if (lists[0].statusCode !== 120) {
+            // this.hllist = lists[0]
+            // console.error(this.hllist)
+            let params = `caseid=${lists[0].lawCaseId}&meetingid=${lists[0].meetingId}&userid=${lists[0].personnelid}&role=${lists[0].role}`
+            wx.navigateTo({url: `/pages/mediate/live?${params}`})
+          }
+          // if (lists.length > 1) {
+          //   this.dblist = lists
+          // }
+          this.$apply()
+        })
+          .catch()
+      }
+    }
+    transform(listo = []) {
+      return listo.map(item => {
+        let date = ''
+
+        if (item.creataDate) {
+          date = dateformat(new Date(item.creataDate))
+        }
+
+        item.date = date
+
+        return item
+      })
+    }
+    shureGo() {
+      wx.showModal({
+        title: '提示重要提示',
+        content: '请您根据真实发生的纠纷情况如实登记信息，提交后调解机构将为您提供调解服务！',
+        success: function (sm) {
+          if (sm.confirm) {
+            wx.navigateTo({url: '/pages/mediate/apply'})
+          } else if (sm.cancel) {
+            console.log('取消')
+          }
+        }
+      })
+    }
+  }
+</script>
+
+<style lang="scss">
+  @import '../../styles/variables';
+
+  page {
+    padding-bottom: 45px;
+  }
+  .picker-cell{
+    border-bottom: 1px solid $gray-light;
+    background-color: $gray-f8;
+  }
+  .section-caption {
+    background-color: $gray-light;
+  }
+
+  .zan-panel + .section-caption {
+    margin-top: 10px;
+  }
+
+  .section-title {
+    font-weight: normal;
+  }
+
+  .break{
+    word-wrap:break-word;
+    width:100%;
+  }
+
+  .zan-field__title,
+  .zan-panel > .zan-panel__title {
+    color: $gray-dark;
+  }
+
+  .nodata-view {
+    width: 100vw;
+    height: calc(100vh - 100px);
+  }
+
+  .btn-group {
+    text-align: right;
+
+    .zan-btn {
+      min-width: 70px;
+      background-color: lighten($primary-color, 62%);
+      border-radius: 20px;
+      &::after {
+        border-radius: 40px;
+      }
+    }
+  }
+
+  .fixed-bar .zan-btn {
+    border-radius: 0;
+
+    &::after {
+      border-radius: 0;
+    }
+  }
+</style>
