@@ -1,7 +1,7 @@
 <template>
   <view class="live-container zan-row {{ 'live-item' + count }}">
     <block wx:for="{{ list }}" wx:key="index">
-      <view class="live-box" wx:if="{{item.isShow}}">
+      <view class="live-box" wx:if="{{item.isShow && item.role.code !== 71}}">
         <view class="live-item {{ index % 2 ? 'child-odd' : '' }}">
           <view class="live-video">
             <block wx:if="{{ item.current}}">
