@@ -229,7 +229,7 @@
               setItem('name', this.name)
               setItem('pwd', this.pass)
               saveToken(data.token)
-              // console.log(saveToken(data.token))
+              // console.error(saveToken(data.token))
               // 保存用户信息
               const {user = {}} = data
               saveUserInfo(Object.assign(data, {...user}, {avatarUrl: user.headPortrait}))

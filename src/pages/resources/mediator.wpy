@@ -8,6 +8,10 @@
             <view class="zan-center text-primary zan-font-16">{{ item.actualName }}</view>
             <view class="zan-center zan-font-12"><view class="zw">{{ item.serviceName }}</view></view>
             <view class="zan-cell">
+              <view class="zan-cell__hd gray-dark">调解:</view>
+              <view class="zan-cell__bd zan-ellipsis--l2" style="height: 22px;">{{ item.count }}件</view>
+            </view>
+            <view class="zan-cell">
               <view class="zan-cell__hd gray-dark">擅长:</view>
               <view class="zan-cell__bd zan-ellipsis--l2" >{{ item.ability }}</view>
             </view>

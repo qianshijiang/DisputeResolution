@@ -458,7 +458,9 @@ export default class Home extends wepy.page {
         consultNum = 0
         // evalauteNum = 0
       } = data
-
+      if (this.hasToken) {
+        this.onPullup()
+      }
       // this.count = disputeNum + consultNum + evalauteNum
       this.count = disputeNum + consultNum
 
@@ -517,9 +519,6 @@ export default class Home extends wepy.page {
   onShow() {
     this.updateToken()
     this.fetchData()
-    if (this.hasToken) {
-      this.onPullup()
-    }
     // 获取微信用户信息
     if (!this.wxUserInfo) {
       getWxUserInfo().then((info = {}) => {

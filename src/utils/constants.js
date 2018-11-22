@@ -14,16 +14,16 @@ var ROBOT_SOCKET_URL = exports.ROBOT_SOCKET_URL = 'wss://robot.odrcloud.cn/webso
 
 // 测试环境
 /* @if ENV='test' **
-var HOST = exports.HOST = 'https://train.odrcloud.cn/TEST/' // 接口地址
+var HOST = exports.HOST = 'https://test.yunjf.gov.cn/' // 接口地址
 var H5URL = exports.H5URL = 'https://www.epan123.com' // 接口地址
 
-var SOCKET_URL = exports.SOCKET_URL = 'wss://train.odrcloud.cn/TEST/' // socket 地址
+var SOCKET_URL = exports.SOCKET_URL = 'wss://test.yunjf.gov.cn/' // socket 地址
 
-var SOCKET_PREFIX = exports.SOCKET_PREFIX = 'ODRTxVx' // 推流前缀
+var SOCKET_PREFIX = exports.SOCKET_PREFIX = 'YDRPxVx' // 推流前缀
 
-var ROBOT_URL = exports.ROBOT_URL = 'https://robot.odrcloud.cn/TEST/' // 接口地址
+var ROBOT_URL = exports.ROBOT_URL = 'https://robot.odrcloud.cn/' // 接口地址
 
-var ROBOT_SOCKET_URL = exports.ROBOT_SOCKET_URL = 'wss://robot.odrcloud.cn/TEST/websocket'   //智能咨询socket地址
+var ROBOT_SOCKET_URL = exports.ROBOT_SOCKET_URL = 'wss://robot.odrcloud.cn/websocket'   //智能咨询socket地址
 /* @endif  */
 
 // 生产环境

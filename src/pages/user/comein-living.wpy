@@ -154,7 +154,7 @@
                       url: 'https://recognition.image.myqcloud.com/ocr/idcard',
                       method: 'POST',
                       data: params,
-                      header: {'Authorization': 'NFRYmUgUM6DOcs5YYtXI4SQZHuthPTEyNTU5Nzg4NTcmaz1BS0lENHpmRVpraFQxTFFHc0dmSnpRY1lGZ3NwWDJKTWdrNkQmZT0xNTQxNjc5MzYzJnQ9MTUzOTA4NzM2MyZyPTE4NzgwNzQ4MjIwJmY9', 'Content-Type': 'application/json'},
+                      header: {'Authorization': 'dATL13iTFonfYwbq2MklRj86KTdhPTEyNTU5Nzg4NTcmaz1BS0lENHpmRVpraFQxTFFHc0dmSnpRY1lGZ3NwWDJKTWdrNkQmZT0xNTQzOTkyMjgxJnQ9MTU0MTQwMDI4MSZyPTE3NzI5OTE4NjAmZj0=', 'Content-Type': 'application/json'},
                       success: function(res) {
                         that.name = res.data.result_list[0].data.name
                         that.idcard = res.data.result_list[0].data.id
